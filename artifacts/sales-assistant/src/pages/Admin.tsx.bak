@@ -1,0 +1,1134 @@
+import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
+import logoImg from "/logo.jpg";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Shield,
+  Users,
+  ShoppingBag,
+  Wallet,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  RefreshCw,
+  AlertCircle,
+  TrendingUp,
+  Package,
+  Plus,
+  Pencil,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Settings,
+  Save,
+  Key,
+} from "lucide-react";
+
+interface Deposit {
+  id: number;
+  userId: number;
+  userName?: string;
+  userEmail?: string;
+  amount: string;
+  method: string;
+  txHash?: string;
+  status: string;
+  createdAt: string;
+}
+
+interface Order {
+  id: number;
+  userId: number;
+  userName?: string;
+  userEmail?: string;
+  serviceName?: string;
+  serviceType?: string;
+  identifier?: string;
+  imei?: string;
+  status: string;
+  price: string;
+  result?: string;
+  apiOrderId?: string;
+  createdAt: string;
+}
+
+interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  balance: string;
+  role: string;
+  isEmailVerified: boolean;
+  createdAt: string;
+}
+
+interface Stats {
+  totalUsers: number;
+  totalOrders: number;
+  totalRevenue: string;
+  pendingDeposits: number;
+  todayOrders: number;
+  completedOrders: number;
+}
+
+interface Service {
+  id: number;
+  name: string;
+  category: string;
+  price: string;
+  description?: string;
+  deliveryTime?: string;
+  isActive: boolean;
+  apiServiceId?: string;
+}
+
+const EMPTY_SERVICE = { name: "", category: "imei", price: "", description: "", deliveryTime: "" };
+
+export default function Admin() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [deposits, setDeposits] = useState<Deposit[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionMsg, setActionMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [adminOrderTypeFilter, setAdminOrderTypeFilter] = useState("all");
+  const [adminOrderStatusFilter, setAdminOrderStatusFilter] = useState("all");
+
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [serviceForm, setServiceForm] = useState(EMPTY_SERVICE);
+  const [savingService, setSavingService] = useState(false);
+
+  const [userActionModal, setUserActionModal] = useState<{ user: AdminUser; type: "add" | "deduct" | "delete" } | null>(null);
+  const [userActionAmount, setUserActionAmount] = useState("");
+  const [userActionNote, setUserActionNote] = useState("");
+  const [userActionLoading, setUserActionLoading] = useState(false);
+
+  const [pwChange, setPwChange] = useState({ current: "", newPw: "", confirm: "" });
+  const [changingPw, setChangingPw] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== "admin") return;
+    loadAll();
+  }, [user]);
+
+  const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem("iu_token")}` });
+
+  const apiFetch = (url: string, options: RequestInit = {}) => {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 12000);
+    return fetch(url, { ...options, signal: ctrl.signal });
+  };
+
+  const handleSyncProducts = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await apiFetch("/api/admin/services/sync", { method: "POST", headers: authHeader() });
+      const data = await res.json();
+      if (!res.ok) {
+        setSyncResult({ type: "error", text: data.error ?? "Sync failed" });
+      } else {
+        setSyncResult({ type: "success", text: data.message ?? "Sync complete" });
+        const svRes = await apiFetch("/api/admin/services", { headers: authHeader() });
+        if (svRes.ok) { const sv = await svRes.json(); setServices(Array.isArray(sv) ? sv : []); }
+      }
+    } catch { setSyncResult({ type: "error", text: "Network error during sync" }); }
+    finally { setSyncing(false); }
+  };
+
+  const loadAll = async () => {
+    setLoading(true);
+    const results = await Promise.allSettled([
+      apiFetch("/api/admin/deposits", { headers: authHeader() }),
+      apiFetch("/api/admin/orders",   { headers: authHeader() }),
+      apiFetch("/api/admin/users",    { headers: authHeader() }),
+      apiFetch("/api/admin/stats",    { headers: authHeader() }),
+      apiFetch("/api/admin/services", { headers: authHeader() }),
+    ]);
+    const safeJson = async (r: PromiseSettledResult<Response>) => {
+      if (r.status !== "fulfilled" || !r.value.ok) return null;
+      return r.value.json().catch(() => null);
+    };
+    const [dData, oData, uData, sData, svData] = await Promise.all(results.map(safeJson));
+    if (dData !== null)  setDeposits(Array.isArray(dData) ? dData : dData.deposits ?? []);
+    if (oData !== null)  setOrders(Array.isArray(oData) ? oData : oData.orders ?? []);
+    if (uData !== null)  setUsers(Array.isArray(uData) ? uData : uData.users ?? []);
+    if (sData !== null)  setStats(sData);
+    if (svData !== null) setServices(Array.isArray(svData) ? svData : []);
+    if (results.every(r => r.status === "rejected")) flash("error", "Failed to load data. Check network.");
+    setLoading(false);
+  };
+
+  const handlePasswordChange = async () => {
+    if (!pwChange.current || !pwChange.newPw) { flash("error", "All fields required"); return; }
+    if (pwChange.newPw.length < 6) { flash("error", "New password must be at least 6 characters"); return; }
+    if (pwChange.newPw !== pwChange.confirm) { flash("error", "New passwords do not match"); return; }
+    setChangingPw(true);
+    try {
+      const res = await fetch("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ currentPassword: pwChange.current, newPassword: pwChange.newPw }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        flash("success", "Password changed successfully");
+        setPwChange({ current: "", newPw: "", confirm: "" });
+      } else {
+        flash("error", data.error ?? "Failed to change password");
+      }
+    } catch {
+      flash("error", "Network error");
+    } finally {
+      setChangingPw(false);
+    }
+  };
+
+  const updateDeposit = async (id: number, status: "approved" | "rejected") => {
+    try {
+      const res = await fetch(`/api/admin/deposits/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setDeposits((prev) => prev.map((d) => (d.id === id ? { ...d, status: updated.status } : d)));
+        flash("success", `Deposit #${id} ${status}`);
+      } else {
+        const data = await res.json();
+        flash("error", data.error ?? "Action failed");
+      }
+    } catch {
+      flash("error", "Network error");
+    }
+  };
+
+  const updateOrder = async (id: number, status: string, result?: string) => {
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ status, result }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: updated.status, result: updated.result } : o)));
+        flash("success", `Order #${id} → ${status}`);
+      } else {
+        const data = await res.json();
+        flash("error", data.error ?? "Action failed");
+      }
+    } catch {
+      flash("error", "Network error");
+    }
+  };
+
+  const openAddService = () => {
+    setEditingService(null);
+    setServiceForm(EMPTY_SERVICE);
+    setShowServiceModal(true);
+  };
+
+  const openEditService = (svc: Service) => {
+    setEditingService(svc);
+    setServiceForm({
+      name: svc.name,
+      category: svc.category,
+      price: svc.price,
+      description: svc.description || "",
+      deliveryTime: svc.deliveryTime || "",
+    });
+    setShowServiceModal(true);
+  };
+
+  const saveService = async () => {
+    if (!serviceForm.name || !serviceForm.category || !serviceForm.price) {
+      flash("error", "Name, category, and price are required");
+      return;
+    }
+    setSavingService(true);
+    try {
+      const url = editingService ? `/api/admin/services/${editingService.id}` : "/api/admin/services";
+      const method = editingService ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify(serviceForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (editingService) {
+          setServices((prev) => prev.map((s) => s.id === editingService.id ? data : s));
+          flash("success", "Service updated");
+        } else {
+          setServices((prev) => [data, ...prev]);
+          flash("success", "Service created");
+        }
+        setShowServiceModal(false);
+      } else {
+        flash("error", data.error ?? "Failed to save service");
+      }
+    } catch {
+      flash("error", "Network error");
+    } finally {
+      setSavingService(false);
+    }
+  };
+
+  const toggleService = async (svc: Service) => {
+    try {
+      const res = await fetch(`/api/admin/services/${svc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+        body: JSON.stringify({ isActive: !svc.isActive }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setServices((prev) => prev.map((s) => s.id === svc.id ? updated : s));
+      }
+    } catch {}
+  };
+
+  const deleteService = async (id: number) => {
+    if (!confirm("Delete this service? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/admin/services/${id}`, {
+        method: "DELETE",
+        headers: authHeader(),
+      });
+      if (res.ok) {
+        setServices((prev) => prev.filter((s) => s.id !== id));
+        flash("success", "Service deleted");
+      } else {
+        const data = await res.json();
+        flash("error", data.error ?? "Failed to delete");
+      }
+    } catch {
+      flash("error", "Network error");
+    }
+  };
+
+  const flash = (type: "success" | "error", text: string) => {
+    setActionMsg({ type, text });
+    setTimeout(() => setActionMsg(null), 4000);
+  };
+
+  const handleUserAction = async () => {
+    if (!userActionModal) return;
+    const { user: u, type } = userActionModal;
+    setUserActionLoading(true);
+    try {
+      if (type === "delete") {
+        const res = await fetch(`/api/admin/users/${u.id}`, {
+          method: "DELETE",
+          headers: authHeader(),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setUsers((prev) => prev.filter((x) => x.id !== u.id));
+          flash("success", `User "${u.name}" deleted`);
+          setUserActionModal(null);
+        } else {
+          flash("error", data.error ?? "Delete failed");
+        }
+      } else {
+        if (!userActionAmount || parseFloat(userActionAmount) <= 0) {
+          flash("error", "Enter a valid amount"); setUserActionLoading(false); return;
+        }
+        const res = await fetch(`/api/admin/users/${u.id}/adjust`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeader() },
+          body: JSON.stringify({ type, amount: userActionAmount, note: userActionNote }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setUsers((prev) => prev.map((x) => x.id === u.id ? data : x));
+          flash("success", `$${userActionAmount} ${type === "add" ? "added to" : "deducted from"} ${u.name}'s balance`);
+          setUserActionModal(null);
+          setUserActionAmount("");
+          setUserActionNote("");
+        } else {
+          flash("error", data.error ?? "Action failed");
+        }
+      }
+    } catch {
+      flash("error", "Network error");
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const METHOD_LABELS: Record<string, string> = {
+    bep20: "BEP20", trc20: "TRC20", binance_c2c: "C2C",
+  };
+
+  const pendingDeposits = deposits.filter((d) => d.status === "pending");
+  const activeOrders = orders.filter((o) => o.status === "pending" || o.status === "processing");
+
+  const handleLogout = () => {
+    localStorage.removeItem("iu_token");
+    navigate("/login");
+  };
+
+  const AdminShell = ({ children }: { children: React.ReactNode }) => (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Admin top bar */}
+      <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="iUnlockd" className="w-7 h-7 rounded-lg object-cover" />
+            <div>
+              <span className="text-white font-bold text-sm">iUnlockd</span>
+              <span className="ml-2 text-xs px-1.5 py-0.5 bg-primary/80 text-white rounded font-semibold">ADMIN</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-xs text-gray-400 hover:text-white transition-colors">
+              ← Back to site
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="text-xs px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+      <main className="flex-1">{children}</main>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <AdminShell>
+        <div className="flex items-center justify-center min-h-[60vh] text-gray-500">
+          Loading…
+        </div>
+      </AdminShell>
+    );
+  }
+
+  return (
+    <AdminShell>
+    <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Shield className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">Admin Panel</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={loadAll}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Action message */}
+      {actionMsg && (
+        <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-md border ${
+          actionMsg.type === "success"
+            ? "text-green-600 bg-green-500/10 border-green-500/20"
+            : "text-destructive bg-destructive/10 border-destructive/20"
+        }`}>
+          {actionMsg.type === "success"
+            ? <CheckCircle2 className="w-4 h-4 shrink-0" />
+            : <AlertCircle className="w-4 h-4 shrink-0" />}
+          {actionMsg.text}
+        </div>
+      )}
+
+      {/* Stats */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { icon: Wallet,      label: "Pending Deposits", value: stats.pendingDeposits, color: "text-yellow-600", bg: "bg-yellow-500/10" },
+            { icon: ShoppingBag, label: "Active Orders",    value: activeOrders.length,    color: "text-blue-600",   bg: "bg-blue-500/10"   },
+            { icon: Users,       label: "Total Users",      value: stats.totalUsers,       color: "text-primary",    bg: "bg-primary/10"    },
+            { icon: ShoppingBag, label: "Total Orders",     value: stats.totalOrders,      color: "text-green-600",  bg: "bg-green-500/10"  },
+            { icon: CheckCircle2,label: "Completed",        value: stats.completedOrders,  color: "text-green-600",  bg: "bg-green-500/10"  },
+            { icon: TrendingUp,  label: "Revenue",          value: `$${parseFloat(stats.totalRevenue).toFixed(0)}`, color: "text-primary", bg: "bg-primary/10" },
+          ].map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.label} className="border-border">
+                <CardContent className="p-3 flex flex-col gap-1">
+                  <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                    <Icon className={`w-4 h-4 ${stat.color}`} />
+                  </div>
+                  <p className="text-lg font-bold">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground leading-tight">{stat.label}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Tabs defaultValue="deposits">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="deposits" className="flex items-center gap-1">
+            <Wallet className="w-3 h-3" />
+            Deposits
+            {pendingDeposits.length > 0 && (
+              <Badge variant="destructive" className="ml-1 text-xs px-1.5 py-0 h-4">
+                {pendingDeposits.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="flex items-center gap-1">
+            <ShoppingBag className="w-3 h-3" />
+            Orders
+            {activeOrders.length > 0 && (
+              <Badge className="ml-1 text-xs px-1.5 py-0 h-4 bg-blue-500">
+                {activeOrders.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="services" className="flex items-center gap-1">
+            <Package className="w-3 h-3" />
+            Services ({services.length})
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            Users ({users.length})
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-1">
+            <Settings className="w-3 h-3" />
+            Settings
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ── Deposits Tab ── */}
+        <TabsContent value="deposits" className="flex flex-col gap-3 mt-4">
+          <p className="text-sm text-muted-foreground">{deposits.length} total · {pendingDeposits.length} pending</p>
+          {deposits.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">No deposit requests yet.</p>
+          ) : (
+            deposits.map((dep) => (
+              <Card key={dep.id} className="border-border">
+                <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-sm">#{dep.id}</span>
+                      <Badge variant="outline" className="text-xs">{METHOD_LABELS[dep.method] ?? dep.method}</Badge>
+                      <StatusBadge status={dep.status} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {dep.userEmail ?? dep.userName ?? `User #${dep.userId}`}
+                    </p>
+                    {dep.txHash && (
+                      <p className="text-xs text-muted-foreground">Note: {dep.txHash}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">{new Date(dep.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <p className="text-lg font-bold text-primary">${parseFloat(dep.amount).toFixed(2)}</p>
+                    {dep.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                          onClick={() => updateDeposit(dep.id, "approved")}
+                        >
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-destructive text-destructive hover:bg-destructive/10 h-8 text-xs"
+                          onClick={() => updateDeposit(dep.id, "rejected")}
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        {/* ── Orders Tab ── */}
+        <TabsContent value="orders" className="flex flex-col gap-3 mt-4">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: "all", label: "All Types" },
+              { key: "imei",   label: "IMEI" },
+              { key: "server", label: "Server" },
+              { key: "tool",   label: "Tool Rent" },
+            ].map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setAdminOrderTypeFilter(t.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  adminOrderTypeFilter === t.key
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+            <div className="flex gap-1 ml-auto">
+              {["all","pending","processing","completed","failed"].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setAdminOrderStatusFilter(s)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    adminOrderStatusFilter === s
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          {(() => {
+            const filteredOrders = orders.filter((o) => {
+              const matchType = adminOrderTypeFilter === "all" || o.serviceType === adminOrderTypeFilter;
+              const matchStatus = adminOrderStatusFilter === "all" || o.status === adminOrderStatusFilter;
+              return matchType && matchStatus;
+            });
+            return (
+              <>
+                <p className="text-sm text-muted-foreground">{filteredOrders.length} of {orders.length} orders</p>
+                {filteredOrders.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">No orders match selected filters.</p>
+                ) : (
+                  filteredOrders.map((order) => (
+                    <OrderRow key={order.id} order={order} onUpdate={updateOrder} />
+                  ))
+                )}
+              </>
+            );
+          })()}
+        </TabsContent>
+
+        {/* ── Services Tab ── */}
+        <TabsContent value="services" className="flex flex-col gap-3 mt-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">
+              {services.length} services · {services.filter(s => s.isActive).length} active
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSyncProducts}
+                disabled={syncing}
+                title="Sync services from Merchant API (requires MERCHANT_API_ENDPOINT env var)"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+                {syncing ? "Syncing…" : "Sync from API"}
+              </Button>
+              <Button size="sm" onClick={openAddService} className="bg-primary hover:bg-primary/90">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Service
+              </Button>
+            </div>
+          </div>
+
+          {syncResult && (
+            <div className={`text-sm rounded-lg px-3 py-2 ${syncResult.type === "success" ? "text-green-700 bg-green-50 border border-green-200" : "text-red-600 bg-red-50 border border-red-200"}`}>
+              {syncResult.text}
+            </div>
+          )}
+
+          {services.length === 0 ? (
+            <div className="text-center py-12 flex flex-col items-center gap-3 text-muted-foreground">
+              <Package className="w-10 h-10 opacity-30" />
+              <p>No services yet.</p>
+              <p className="text-xs">Click "Add Service" to create a service manually.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {services.map((svc) => (
+                <Card key={svc.id} className={`border-border ${!svc.isActive ? "opacity-60" : ""}`}>
+                  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm truncate">{svc.name}</span>
+                        <Badge variant="outline" className="text-xs capitalize shrink-0">
+                          {svc.category}
+                        </Badge>
+                        {!svc.isActive && (
+                          <Badge variant="outline" className="text-xs text-muted-foreground shrink-0">
+                            Inactive
+                          </Badge>
+                        )}
+                        {svc.apiServiceId && (
+                          <Badge variant="outline" className="text-xs text-muted-foreground shrink-0">
+                            API #{svc.apiServiceId}
+                          </Badge>
+                        )}
+                      </div>
+                      {svc.description && (
+                        <p className="text-xs text-muted-foreground truncate">{svc.description}</p>
+                      )}
+                      {svc.deliveryTime && (
+                        <p className="text-xs text-muted-foreground">⏱ {svc.deliveryTime}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-bold text-primary">${parseFloat(svc.price).toFixed(2)}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        onClick={() => toggleService(svc)}
+                        title={svc.isActive ? "Deactivate" : "Activate"}
+                      >
+                        {svc.isActive
+                          ? <ToggleRight className="w-4 h-4 text-green-600" />
+                          : <ToggleLeft className="w-4 h-4 text-muted-foreground" />
+                        }
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        onClick={() => openEditService(svc)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        onClick={() => deleteService(svc.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Users Tab ── */}
+        <TabsContent value="users" className="flex flex-col gap-3 mt-4">
+          <p className="text-sm text-muted-foreground">{users.length} total users</p>
+          {users.map((u) => (
+            <Card key={u.id} className="border-border">
+              <CardContent className="p-4 flex flex-col gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="font-semibold text-sm">{u.name}</span>
+                      <Badge variant={u.role === "admin" ? "default" : "secondary"} className="text-xs capitalize">
+                        {u.role}
+                      </Badge>
+                      {!u.isEmailVerified && (
+                        <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-500/30">Unverified</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{u.email}</p>
+                    <p className="text-xs text-muted-foreground">Joined {new Date(u.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-primary font-bold shrink-0">
+                    <Wallet className="w-4 h-4" />
+                    ${parseFloat(u.balance).toFixed(2)}
+                  </div>
+                </div>
+                {u.role !== "admin" && (
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => { setUserActionModal({ user: u, type: "add" }); setUserActionAmount(""); setUserActionNote(""); }}
+                    >
+                      <Plus className="w-3 h-3 mr-1" /> Add Fund
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs border-orange-400 text-orange-600 hover:bg-orange-50"
+                      onClick={() => { setUserActionModal({ user: u, type: "deduct" }); setUserActionAmount(""); setUserActionNote(""); }}
+                    >
+                      <TrendingUp className="w-3 h-3 mr-1 rotate-180" /> Deduct
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs border-destructive text-destructive hover:bg-destructive/10"
+                      onClick={() => setUserActionModal({ user: u, type: "delete" })}
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" /> Delete User
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+
+        {/* ── Settings Tab ── */}
+        <TabsContent value="settings" className="flex flex-col gap-6 mt-4">
+          {/* Admin Password Change */}
+          <Card className="border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Key className="w-4 h-4 text-primary" />
+                Change Admin Password
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <p className="text-xs text-muted-foreground">
+                Update your admin account password. You will need to enter your current password to confirm.
+              </p>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="pw-current">Current Password</Label>
+                  <Input
+                    id="pw-current"
+                    type="password"
+                    placeholder="Enter your current password"
+                    value={pwChange.current}
+                    onChange={(e) => setPwChange((s) => ({ ...s, current: e.target.value }))}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="pw-new">New Password</Label>
+                  <Input
+                    id="pw-new"
+                    type="password"
+                    placeholder="Min. 6 characters"
+                    value={pwChange.newPw}
+                    onChange={(e) => setPwChange((s) => ({ ...s, newPw: e.target.value }))}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="pw-confirm">Confirm New Password</Label>
+                  <Input
+                    id="pw-confirm"
+                    type="password"
+                    placeholder="Repeat new password"
+                    value={pwChange.confirm}
+                    onChange={(e) => setPwChange((s) => ({ ...s, confirm: e.target.value }))}
+                    className={pwChange.confirm && pwChange.confirm !== pwChange.newPw ? "border-destructive" : ""}
+                  />
+                  {pwChange.confirm && pwChange.confirm !== pwChange.newPw && (
+                    <p className="text-xs text-destructive">Passwords do not match</p>
+                  )}
+                </div>
+              </div>
+              <Button
+                onClick={handlePasswordChange}
+                disabled={changingPw || !pwChange.current || !pwChange.newPw || !pwChange.confirm}
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {changingPw ? "Changing…" : "Change Password"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* ── User Action Modal ── */}
+      <Dialog open={!!userActionModal} onOpenChange={(open) => { if (!open) setUserActionModal(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>
+              {userActionModal?.type === "add" && "Add Fund to Account"}
+              {userActionModal?.type === "deduct" && "Deduct from Account"}
+              {userActionModal?.type === "delete" && "Delete User Account"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {userActionModal?.type === "delete" ? (
+            <div className="flex flex-col gap-4 py-2">
+              <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-destructive">This action cannot be undone.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    All data for <strong>{userActionModal.user.name}</strong> ({userActionModal.user.email}) will be permanently removed.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setUserActionModal(null)}>Cancel</Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleUserAction}
+                  disabled={userActionLoading}
+                >
+                  {userActionLoading ? "Deleting…" : "Yes, Delete User"}
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 py-2">
+              <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                <p className="font-semibold text-gray-900">{userActionModal?.user.name}</p>
+                <p className="text-xs text-muted-foreground">{userActionModal?.user.email}</p>
+                <p className="text-xs text-primary font-semibold mt-1">
+                  Current Balance: ${parseFloat(userActionModal?.user.balance ?? "0").toFixed(2)}
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="adjust-amount">
+                  Amount (USD) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="adjust-amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="Enter amount e.g. 10.00"
+                  value={userActionAmount}
+                  onChange={(e) => setUserActionAmount(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="adjust-note">Note (optional)</Label>
+                <Input
+                  id="adjust-note"
+                  placeholder="Reason for this adjustment"
+                  value={userActionNote}
+                  onChange={(e) => setUserActionNote(e.target.value)}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setUserActionModal(null)}>Cancel</Button>
+                <Button
+                  onClick={handleUserAction}
+                  disabled={userActionLoading}
+                  className={userActionModal?.type === "add" ? "bg-green-600 hover:bg-green-700" : "bg-orange-500 hover:bg-orange-600"}
+                >
+                  {userActionLoading
+                    ? "Processing…"
+                    : userActionModal?.type === "add"
+                      ? `Add $${userActionAmount || "0"}`
+                      : `Deduct $${userActionAmount || "0"}`}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Service Add/Edit Modal ── */}
+      <Dialog open={showServiceModal} onOpenChange={setShowServiceModal}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>{editingService ? "Edit Service" : "Add New Service"}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="svc-name">Service Name *</Label>
+              <Input
+                id="svc-name"
+                placeholder="e.g. iPhone 15 Factory Unlock"
+                value={serviceForm.name}
+                onChange={(e) => setServiceForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="svc-cat">Category *</Label>
+                <Select
+                  value={serviceForm.category}
+                  onValueChange={(v) => setServiceForm((f) => ({ ...f, category: v }))}
+                >
+                  <SelectTrigger id="svc-cat">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="imei">IMEI Unlock</SelectItem>
+                    <SelectItem value="server">Server Unlock</SelectItem>
+                    <SelectItem value="tool">Tool Rent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="svc-price">Price (USD) *</Label>
+                <Input
+                  id="svc-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={serviceForm.price}
+                  onChange={(e) => setServiceForm((f) => ({ ...f, price: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="svc-delivery">Delivery Time</Label>
+              <Input
+                id="svc-delivery"
+                placeholder="e.g. 1-3 hours, 24 hours"
+                value={serviceForm.deliveryTime}
+                onChange={(e) => setServiceForm((f) => ({ ...f, deliveryTime: e.target.value }))}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="svc-desc">Description</Label>
+              <Textarea
+                id="svc-desc"
+                placeholder="Brief description of the service…"
+                rows={3}
+                value={serviceForm.description}
+                onChange={(e) => setServiceForm((f) => ({ ...f, description: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowServiceModal(false)}>Cancel</Button>
+            <Button onClick={saveService} disabled={savingService}>
+              {savingService ? "Saving…" : editingService ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+    </AdminShell>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    pending:    "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    approved:   "bg-green-500/10 text-green-600 border-green-500/20",
+    completed:  "bg-green-500/10 text-green-600 border-green-500/20",
+    rejected:   "bg-red-500/10 text-red-600 border-red-500/20",
+    failed:     "bg-red-500/10 text-red-600 border-red-500/20",
+    processing: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    cancelled:  "bg-gray-500/10 text-gray-600 border-gray-500/20",
+  };
+  return (
+    <Badge variant="outline" className={`text-xs capitalize ${map[status] ?? ""}`}>
+      {status}
+    </Badge>
+  );
+}
+
+function OrderRow({
+  order,
+  onUpdate,
+}: {
+  order: Order;
+  onUpdate: (id: number, status: string, result?: string) => void;
+}) {
+  const [resultText, setResultText] = useState(order.result ?? "");
+  const isActive = order.status === "pending" || order.status === "processing";
+
+  return (
+    <Card className="border-border">
+      <CardContent className="p-4 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-sm">
+              #{order.id} — {order.serviceName ?? "Service"}
+            </span>
+            <StatusBadge status={order.status} />
+            {order.apiOrderId && (
+              <Badge variant="outline" className="text-xs text-muted-foreground">
+                API: {order.apiOrderId}
+              </Badge>
+            )}
+          </div>
+          <span className="font-bold text-primary">${parseFloat(order.price).toFixed(2)}</span>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span>User #{order.userId}</span>
+          <span>·</span>
+          <span className="font-mono">{order.imei ?? order.identifier}</span>
+          <span>·</span>
+          <span>{new Date(order.createdAt).toLocaleString()}</span>
+        </div>
+        {order.result && (
+          <div className="px-3 py-2 bg-green-500/5 border border-green-500/20 rounded text-xs text-green-700">
+            <strong>Result:</strong> {order.result}
+          </div>
+        )}
+        {isActive && (
+          <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-border">
+            <Input
+              placeholder="Unlock result / code (optional)"
+              value={resultText}
+              onChange={(e) => setResultText(e.target.value)}
+              className="flex-1 h-8 text-xs"
+            />
+            <div className="flex gap-2 shrink-0">
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                onClick={() => onUpdate(order.id, "completed", resultText || undefined)}
+              >
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Complete
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-blue-500 text-blue-600 h-8 text-xs"
+                onClick={() => onUpdate(order.id, "processing")}
+              >
+                <Clock className="w-3 h-3 mr-1" />
+                Processing
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-destructive text-destructive h-8 text-xs"
+                onClick={() => onUpdate(order.id, "failed")}
+              >
+                <XCircle className="w-3 h-3 mr-1" />
+                Fail
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

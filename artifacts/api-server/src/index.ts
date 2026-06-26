@@ -1,0 +1,16 @@
+import app from "./app";
+import { logger } from "./lib/logger";
+import { startMerchantCron } from "./modules/merchant/cron";
+import { logHDWalletStatus } from "./modules/payments/auto/usdt/hdWallet";
+
+const rawPort = process.env["PORT"];
+if (!rawPort) throw new Error("PORT environment variable is required.");
+const port = Number(rawPort);
+if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${rawPort}"`);
+
+app.listen(port, (err) => {
+  if (err) { logger.error({ err }, "Error listening on port"); process.exit(1); }
+  logger.info({ port }, "Server listening");
+  logHDWalletStatus();
+  startMerchantCron();
+});

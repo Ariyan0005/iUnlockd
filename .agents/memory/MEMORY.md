@@ -1,0 +1,1 @@
+- [iUnlockd project structure](iunlockd-structure.md) — iUnlockd codebase: frontend=sales-assistant, backend=api-server, modules pattern for email/payments
