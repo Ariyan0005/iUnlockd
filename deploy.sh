@@ -25,7 +25,7 @@ FRONTEND_BUILD_PORT="${FRONTEND_BUILD_PORT:-4173}"
 DEPLOY_API="${DEPLOY_API:-1}"
 API_PORT="${API_PORT:-5000}"
 API_ENTRY="$REPO_DIR/artifacts/api-server/dist/index.mjs"
-API_PM2_NAME="${API_PM2_NAME:-iunlockd-api}"
+API_PM2_NAME="${API_PM2_NAME:-iunlockd}"
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
@@ -70,7 +70,18 @@ validate_configuration() {
   esac
 }
 
+clean_generated_files() {
+  log "Cleaning generated workspace files"
+
+  # These files are safe build/fetch artifacts. Do not use git clean here:
+  # .env files and server-side local files must never be deleted automatically.
+  rm -f "$REPO_DIR/FETCH_HEAD"
+  find "$REPO_DIR" -type f -name '*.tsbuildinfo' -delete
+}
+
 sync_source() {
+  clean_generated_files
+
   log "Fetching ${DEPLOY_REMOTE}/${DEPLOY_BRANCH}"
   git fetch "$DEPLOY_REMOTE" "$DEPLOY_BRANCH"
 
