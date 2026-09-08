@@ -90,7 +90,19 @@ sync_source() {
   current_ref="$(git rev-parse HEAD)"
 
   if [ -n "$(git status --porcelain)" ]; then
-    die "Working tree has local changes. Commit or remove them before deploying."
+    local local_backup_ref="backup/vps-working-tree-before-deploy-$(date '+%Y%m%d-%H%M%S')-$$"
+    log "Local changes found; preserving current commit as ${local_backup_ref}"
+    git branch "$local_backup_ref" HEAD
+    warn "Tracked local changes will be replaced by ${remote_ref}"
+    git reset --hard
+    git clean -fd \
+      -e .env \
+      -e '.env.*' \
+      -e 'uploads/' \
+      -e 'storage/' \
+      -e 'backup.sql'
+    [ -z "$(git status --porcelain)" ] ||
+      die "Working tree is still dirty after safe cleanup; refusing to deploy."
   fi
 
   if [ "$current_ref" = "$(git rev-parse "$remote_ref")" ]; then
