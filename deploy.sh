@@ -25,7 +25,7 @@ FRONTEND_BUILD_PORT="${FRONTEND_BUILD_PORT:-4173}"
 DEPLOY_API="${DEPLOY_API:-1}"
 API_PORT="${API_PORT:-5000}"
 API_ENTRY="$REPO_DIR/artifacts/api-server/dist/index.mjs"
-API_PM2_NAME="${API_PM2_NAME:-iunlockd}"
+API_PM2_NAME="${API_PM2_NAME:-iunlockd-api}"
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
