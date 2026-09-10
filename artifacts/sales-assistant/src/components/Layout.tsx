@@ -35,6 +35,8 @@ import {
   PlusCircle,
   Wrench,
   LogIn,
+  House,
+  Search,
   UserPlus,
   FileText,
   Receipt,
@@ -55,6 +57,7 @@ const NAV_USER_DESKTOP = [
 ];
 
 const NO_FOOTER_PATHS = ["/add-fund", "/manual-payment"];
+const NO_BOTTOM_NAV_PATHS = ["/login", "/register", "/verify-email", "/forgot-password", "/admin"];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout, loading: authLoading } = useAuth();
@@ -65,6 +68,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [accountOpen, setAccountOpen] = useState(false);
 
   const hideFooter = NO_FOOTER_PATHS.some(p => location.pathname.startsWith(p));
+  const hideBottomNav = NO_BOTTOM_NAV_PATHS.some(p => location.pathname.startsWith(p));
 
   const isActive = (href: string) =>
     href === "/" ? location.pathname === "/" : location.pathname.startsWith(href);
@@ -341,7 +345,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1">{children}</main>
+      <main className={`flex-1 ${hideBottomNav ? "" : "pb-20 md:pb-0"}`}>{children}</main>
 
       {!hideFooter && <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -363,7 +367,52 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </footer>}
+
+      {!hideBottomNav && (
+        <nav
+          aria-label="Mobile navigation"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-card border-t border-gray-200 dark:border-border shadow-[0_-2px_12px_rgba(0,0,0,0.08)]"
+        >
+          <div className="grid grid-cols-5 h-16">
+            <BottomNavItem href="/" icon={House} label="Home" active={isActive("/")} />
+            <BottomNavItem href="/imei-services" icon={Smartphone} label="IMEI" active={isActive("/imei-services")} />
+            <BottomNavItem href="/server-services" icon={Server} label="Server" active={isActive("/server-services")} />
+            <BottomNavItem href="/imei-checker" icon={Search} label="IMEI Check" active={isActive("/imei-checker")} />
+            <BottomNavItem
+              href={user ? "/account" : "/login"}
+              icon={user ? User : LogIn}
+              label={user ? "Account" : "Login"}
+              active={isActive(user ? "/account" : "/login")}
+            />
+          </div>
+        </nav>
+      )}
     </div>
+  );
+}
+
+function BottomNavItem({
+  icon: Icon,
+  label,
+  href,
+  active,
+}: {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      to={href}
+      aria-current={active ? "page" : undefined}
+      className={`flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors ${
+        active ? "text-primary font-semibold" : "text-gray-400 hover:text-gray-600 dark:text-muted-foreground"
+      }`}
+    >
+      <Icon className={`w-5 h-5 transition-transform ${active ? "scale-110" : ""}`} />
+      <span>{label}</span>
+    </Link>
   );
 }
 

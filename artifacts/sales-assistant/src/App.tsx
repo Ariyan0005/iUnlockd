@@ -14,6 +14,7 @@ import Register from "@/pages/Register";
 import VerifyEmail from "@/pages/VerifyEmail";
 import Dashboard from "@/pages/Dashboard";
 import IMEIServices from "@/pages/IMEIServices";
+import IMEIChecker from "@/pages/IMEIChecker";
 import ServerServices from "@/pages/ServerServices";
 import ServiceDetail from "@/pages/ServiceDetail";
 import AddFund from "@/pages/AddFund";
@@ -95,6 +96,8 @@ function AppRoutes() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/imei-services" element={<IMEIServices />} />
+                <Route path="/imei-checker" element={<IMEIChecker />} />
+                <Route path="/check" element={<IMEIChecker />} />
                 <Route path="/server-services" element={<ServerServices />} />
                 <Route path="/tool-rent" element={<ToolRent />} />
                 <Route path="/services/:id" element={<ServiceDetail />} />
