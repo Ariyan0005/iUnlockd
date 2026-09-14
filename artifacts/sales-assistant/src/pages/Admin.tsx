@@ -694,6 +694,9 @@ export default function Admin() {
             <a href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-colors">
               ← Back to Site
             </a>
+            <a href="/admin/check-apis" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
+              Check APIs
+            </a>
             <span className="text-xs px-2 py-0.5 bg-primary text-white rounded-md font-bold tracking-wide">ADMIN</span>
           </div>
           <div className="flex items-center gap-2">
@@ -878,7 +881,7 @@ export default function Admin() {
                               <p className="text-sm font-bold text-primary mt-1.5">${Number(svc.price ?? 0).toFixed(2)}</p>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              <button onClick={() => toggleService(svc.id, svc.isActive)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${svc.isActive ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`} title={svc.isActive ? "Active" : "Inactive"}>
+                              <button onClick={() => toggleService(svc)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${svc.isActive ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`} title={svc.isActive ? "Active" : "Inactive"}>
                                 {svc.isActive ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                               </button>
                               <button onClick={() => openEditService(svc)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 hover:bg-primary/10 hover:text-primary flex items-center justify-center transition-colors">

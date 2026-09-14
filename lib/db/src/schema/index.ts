@@ -7,3 +7,4 @@ export * from "./settings";
 export * from "./passkeys";
 export * from "./merchants";
 export * from "./pendingRegistrations";
+export * from "./checkProviders";

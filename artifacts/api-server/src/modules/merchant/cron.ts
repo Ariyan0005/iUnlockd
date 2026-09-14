@@ -3,14 +3,16 @@ import { syncMerchantProducts } from "./sync";
 import { checkPendingDeposits } from "../payments/auto/usdt/monitor";
 import { logger } from "../../lib/logger";
 import { db } from "@workspace/db";
-import { orders, users } from "@workspace/db";
+import { orders, services, users } from "@workspace/db";
 import { eq, and, isNotNull, inArray } from "drizzle-orm";
 import { checkMerchantOrderStatus } from "./order";
 
 
 async function checkOrderStatuses(): Promise<void> {
   try {
-    const pending = await db.select().from(orders)
+    const pending = await db.select({ order: orders, merchantId: services.merchantId })
+      .from(orders)
+      .leftJoin(services, eq(orders.serviceId, services.id))
       .where(and(
         inArray(orders.status, ["processing", "pending"]),
         isNotNull(orders.apiOrderId)
@@ -18,12 +20,13 @@ async function checkOrderStatuses(): Promise<void> {
       .limit(50);
     if (pending.length === 0) return;
     logger.info({ count: pending.length }, "Checking merchant order statuses");
-    for (const order of pending) {
+    for (const row of pending) {
+      const order = row.order;
       try {
         if (!order.apiOrderId) continue;
         const result = await checkMerchantOrderStatus({
           apiOrderId: order.apiOrderId,
-          merchantId: order.merchantId ?? null,
+          merchantId: row.merchantId ?? null,
         });
         const s = result.status.toLowerCase();
         let newStatus: string | null = null;

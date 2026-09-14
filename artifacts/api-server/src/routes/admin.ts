@@ -13,12 +13,14 @@ router.post("/setup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+      res.status(400).json({ error: "All fields are required" });
+      return;
     }
     // Check if any admin already exists
     const [existingAdmin] = await db.select().from(users).where(eq(users.role, "admin")).limit(1);
     if (existingAdmin) {
-      return res.status(400).json({ error: "Admin already setup. Endpoint locked." });
+      res.status(400).json({ error: "Admin already setup. Endpoint locked." });
+      return;
     }
     const hash = await bcrypt.hash(password, 10);
     const [newAdmin] = await db.insert(users).values({
@@ -32,6 +34,7 @@ router.post("/setup", async (req, res) => {
     res.status(201).json({ success: true, message: "Admin created successfully", adminId: newAdmin.id });
   } catch (err) {
     res.status(500).json({ error: "Failed to setup admin: " + String(err) });
+    return;
   }
 });
 

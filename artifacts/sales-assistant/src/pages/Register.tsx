@@ -86,7 +86,7 @@ const Header = ({ showLangMenu, setShowLangMenu, currentLang, setLang, LANGUAGES
             </button>
             {showLangMenu && (
               <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[130px]">
-                {LANGUAGES.map(l=>(
+                {LANGUAGES.map((l: typeof LANGUAGES[number])=>(
                   <button key={l.code} onClick={()=>{setLang(l.code);setShowLangMenu(false);}}
                     className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2 ${currentLang?.code===l.code?"font-semibold text-black":"text-gray-600"}`}>
                     {l.flag} {l.label}

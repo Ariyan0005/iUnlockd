@@ -94,7 +94,7 @@ export async function fetchMerchantServiceList(
     return Object.entries(productsMap).map(([uuid, p]) => ({
       id: uuid,
       name: String(p["name"] ?? ""),
-      price: p["price"] ?? p["cost"] ?? "0",
+      price: String(p["price"] ?? p["cost"] ?? "0"),
       description: p["description"] ? String(p["description"]) : undefined,
       type: p["type"] ? String(p["type"]) : undefined,
       active: true,

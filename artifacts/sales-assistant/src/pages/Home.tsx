@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSEO } from "@/lib/seo";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -203,6 +203,37 @@ export default function Home() {
               </Button>
             </CardContent>
           </Card>
+        </div>
+      </section>
+
+      {/* Device checks */}
+      <section className="border-y border-primary/10 bg-primary/5 px-4 py-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10 text-center">
+            <h2 className="mb-3 text-3xl font-bold">Free Device Check Tools</h2>
+            <p className="mx-auto max-w-2xl text-muted-foreground">
+              Check IMEI, Apple serial, iCloud, carrier, warranty, FMI, and blacklist status from one place.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              ["/imei-checker", "IMEI Checker"],
+              ["/iphone-imei-check", "iPhone IMEI"],
+              ["/apple-serial-check", "Apple Serial"],
+              ["/icloud-check", "iCloud Check"],
+              ["/apple-warranty-check", "Apple Warranty"],
+              ["/iphone-carrier-check", "iPhone Carrier"],
+              ["/samsung-imei-check", "Samsung IMEI"],
+              ["/xiaomi-mi-status-check", "Xiaomi Mi Status"],
+              ["/google-pixel-imei-check", "Google Pixel"],
+              ["/imei-blacklist-check", "Blacklist Check"],
+              ["/fmi-check", "FMI Check"],
+            ].map(([href, label]) => (
+              <Link key={href} to={href} className="group flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-colors hover:border-primary/50 hover:text-primary">
+                {label}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 

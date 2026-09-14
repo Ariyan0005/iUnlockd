@@ -41,6 +41,7 @@ export default function IMEIChecker() {
 
   const [inputVal, setInputVal] = useState(searchParams.get("imei") || "");
   const [result, setResult] = useState<IMEIDetails | null>(null);
+  const [providerMessage, setProviderMessage] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -53,7 +54,7 @@ export default function IMEIChecker() {
     }
   }, [searchParams]);
 
-  const handleLookup = (valToTest?: string) => {
+  const handleLookup = async (valToTest?: string) => {
     const value = (valToTest !== undefined ? valToTest : inputVal).replace(/[^0-9]/g, "");
     if (!value || value.length < 14) {
       setHasSearched(true);
@@ -63,16 +64,37 @@ export default function IMEIChecker() {
 
     setIsScanning(true);
     setHasSearched(true);
+    setProviderMessage(null);
 
     // Update query param
     setSearchParams({ imei: value }, { replace: true });
 
-    // Instant realistic analysis
-    setTimeout(() => {
-      const data = analyzeIMEI(value);
-      setResult(data);
+    // Use the configured server-side provider when available. The existing local
+    // TAC/Luhn analysis remains the intentional fallback until a provider is active.
+    try {
+      const response = await fetch("/api/checks/imei-checker", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: value }),
+      });
+      const providerData = await response.json().catch(() => ({}));
+      if (response.ok) {
+        setProviderMessage(`Live result from ${providerData.provider ?? "configured provider"}`);
+        const live = providerData.data as Partial<IMEIDetails> | null;
+        if (live && typeof live === "object" && typeof live.model === "string" && typeof live.brand === "string") {
+          setResult({ ...analyzeIMEI(value), ...live, imei: value } as IMEIDetails);
+        } else {
+          setProviderMessage("Live provider connected. Showing the provider response format below is not supported by this view yet; local TAC details are shown.");
+          setResult(analyzeIMEI(value));
+        }
+      } else {
+        setResult(analyzeIMEI(value));
+      }
+    } catch {
+      setResult(analyzeIMEI(value));
+    } finally {
       setIsScanning(false);
-    }, 250);
+    }
   };
 
   const handleCopy = (text: string, label: string) => {

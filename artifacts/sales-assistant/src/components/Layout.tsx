@@ -48,6 +48,7 @@ const SERVICE_NAV = [
   { label: "Server Service", href: "/server-services", icon: Server },
   { label: "Remote / Rent Service", href: "/tool-rent", icon: Wrench },
 ];
+const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search };
 
 const NAV_USER_DESKTOP = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -60,7 +61,7 @@ const NO_FOOTER_PATHS = ["/add-fund", "/manual-payment"];
 const NO_BOTTOM_NAV_PATHS = ["/login", "/register", "/verify-email", "/forgot-password", "/admin"];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -128,6 +129,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     {item.label}
                   </Link>
                 ))}
+                <Link
+                  to={CHECK_NAV.href}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive(CHECK_NAV.href) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                >
+                  {CHECK_NAV.label}
+                </Link>
               </>
             )}
           </nav>
@@ -242,6 +251,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <NavItem icon={Smartphone} label="IMEI Service" href="/imei-services" active={isActive("/imei-services")} onClick={close} />
                       <NavItem icon={Server} label="Server Service" href="/server-services" active={isActive("/server-services")} onClick={close} />
                       <NavItem icon={Wrench} label="Remote / Rent Service" href="/tool-rent" active={isActive("/tool-rent")} onClick={close} />
+                      <NavItem icon={Search} label="IMEI Checker" href="/imei-checker" active={isActive("/imei-checker")} onClick={close} />
 
                       <div className="my-1.5 border-t border-border" />
 
@@ -335,6 +345,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             onClick={close}
                           />
                         ))}
+                        <NavItem icon={CHECK_NAV.icon} label={CHECK_NAV.label} href={CHECK_NAV.href} active={isActive(CHECK_NAV.href)} onClick={close} />
                       </div>
                     </>
                   )}

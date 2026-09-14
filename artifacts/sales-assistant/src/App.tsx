@@ -33,6 +33,8 @@ import Contact from "@/pages/Contact";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import NotFound from "@/pages/not-found";
+import DeviceCheckPage from "@/pages/DeviceCheckPage";
+import AdminCheckApis from "@/pages/AdminCheckApis";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +84,7 @@ function AppRoutes() {
 
         {/* Admin */}
         <Route path="/admin/setup" element={<AdminSetup />} />
+        <Route path="/admin/check-apis" element={<ProtectedRoute adminOnly><AdminCheckApis /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
 
         {/* Redirect wrong paths */}
@@ -98,6 +101,18 @@ function AppRoutes() {
                 <Route path="/imei-services" element={<IMEIServices />} />
                 <Route path="/imei-checker" element={<IMEIChecker />} />
                 <Route path="/check" element={<IMEIChecker />} />
+                {Object.keys({
+                  "iphone-imei-check": true,
+                  "apple-serial-check": true,
+                  "icloud-check": true,
+                  "apple-warranty-check": true,
+                  "iphone-carrier-check": true,
+                  "samsung-imei-check": true,
+                  "xiaomi-mi-status-check": true,
+                  "google-pixel-imei-check": true,
+                  "imei-blacklist-check": true,
+                  "fmi-check": true,
+                }).map((slug) => <Route key={slug} path={`/${slug}`} element={<DeviceCheckPage />} />)}
                 <Route path="/server-services" element={<ServerServices />} />
                 <Route path="/tool-rent" element={<ToolRent />} />
                 <Route path="/services/:id" element={<ServiceDetail />} />
