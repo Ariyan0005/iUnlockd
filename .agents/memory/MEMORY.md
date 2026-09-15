@@ -1,1 +1,2 @@
 - [Provider credential safety](provider-credential-safety.md) — keep provider and database credentials outside source control and configure them through environment-backed secrets.
+- [Workspace lockfiles](workspace-lockfiles.md) — any workspace manifest change must be reflected in pnpm-lock.yaml before frozen deployment installs.
