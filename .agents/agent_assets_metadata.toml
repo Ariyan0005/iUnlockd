@@ -1,0 +1,20 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "k8eGsU0kkMBNPOrKEFzgm"
+uri = "file://iUnlockd-source-v2.zip"
+type = "unspecified"
+title = "iUnlockd Clean Source v2"
+
+[[outputs]]
+id = "IKj2SbtLXuwViFvSzdmDZ"
+uri = "file://iunlockd-v4.tar.gz"
+type = "unspecified"
+title = "iUnlockd v4 — Fresh Code (2FA + Merchant Sync)"
+
+[[outputs]]
+id = "NL8wOR58rQi6hw4HcIQl9"
+uri = "file://iunlockd-v5.tar.gz"
+type = "unspecified"
+title = "iUnlockd v5 — Passkey + Merchant Forwarding + Deposit Fix"
