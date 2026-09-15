@@ -15,6 +15,7 @@ export const checkProviders = pgTable("check_providers", {
   responseFormat: varchar("response_format", { length: 20 }).notNull().default("json"),
   responseFormatParam: varchar("response_format_param", { length: 100 }).notNull().default("format"),
   staticQuery: text("static_query"),
+  staticBody: text("static_body"),
   description: text("description"),
   isActive: boolean("is_active").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),

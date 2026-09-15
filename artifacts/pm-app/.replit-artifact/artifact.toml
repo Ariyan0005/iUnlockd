@@ -1,5 +1,5 @@
 kind = "web"
-previewPath = "/"
+previewPath = "/pm"
 title = "Project Manager"
 version = "1.0.0"
 id = "artifacts/pm-app"
@@ -11,7 +11,7 @@ version = "1.0.0"
 
 [[services]]
 name = "web"
-paths = [ "/" ]
+paths = [ "/pm" ]
 localPort = 23704
 
 [services.development]
@@ -28,4 +28,4 @@ to = "/index.html"
 
 [services.env]
 PORT = "23704"
-BASE_PATH = "/"
+BASE_PATH = "/pm"

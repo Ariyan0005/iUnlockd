@@ -40,13 +40,19 @@ router.post("/checks/:slug", async (req, res) => {
       return;
     }
 
-    const { response, data } = await requestCheckProvider(provider, identifier);
-    if (!response.ok) {
-      res.status(502).json({ error: `Provider returned HTTP ${response.status}`, providerStatus: response.status });
+    const result = await requestCheckProvider(provider, identifier);
+    const hasBlockingIssue = result.issues.some((issue) => issue.severity === "error");
+    if (!result.response.ok || hasBlockingIssue) {
+      res.status(502).json({
+        error: result.issues[0]?.message ?? `Provider returned HTTP ${result.response.status}`,
+        code: result.issues[0]?.code ?? "PROVIDER_REQUEST_FAILED",
+        providerStatus: result.response.status,
+        providerResponse: result.responseDiagnostics,
+      });
       return;
     }
 
-    res.json({ slug, provider: provider.name, identifier, data });
+    res.json({ slug, provider: provider.name, identifier, data: result.data });
   } catch (err) {
     req.log.error({ err, slug }, "Public check provider request failed");
     res.status(502).json({ error: "Unable to reach the check provider" });

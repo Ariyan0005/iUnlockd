@@ -39,6 +39,7 @@ type Provider = {
   responseFormat: string;
   responseFormatParam: string;
   staticQuery?: string | null;
+  staticBody?: string | null;
   description?: string | null;
   isActive: boolean;
   apiKeySet?: boolean;
@@ -58,8 +59,38 @@ type ProviderForm = {
   responseFormat: string;
   responseFormatParam: string;
   staticQuery: string;
+  staticBody: string;
   description: string;
   isActive: boolean;
+};
+
+type ProviderTestResult = {
+  ok: boolean;
+  message: string;
+  code?: string;
+  httpStatus?: number;
+  request?: {
+    method: string;
+    url: string;
+    body?: string;
+  };
+  response?: {
+    status: number;
+    statusText: string;
+    contentType: string;
+    server: string;
+    cloudflareChallenge: boolean;
+    durationMs: number;
+    bodyPreview: string;
+    parsedJson: boolean;
+  };
+  issues?: Array<{
+    code: string;
+    message: string;
+    severity: "error" | "warning";
+  }>;
+  preview?: unknown;
+  detail?: string;
 };
 
 const CHECK_SLUGS = [
@@ -90,6 +121,7 @@ const EMPTY_FORM: ProviderForm = {
   responseFormat: "json",
   responseFormatParam: "format",
   staticQuery: "",
+  staticBody: "",
   description: "",
   isActive: false,
 };
@@ -108,7 +140,7 @@ export default function AdminCheckApis() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const [testValues, setTestValues] = useState<Record<number, string>>({});
-  const [testResults, setTestResults] = useState<Record<number, { ok: boolean; message: string }>>({});
+  const [testResults, setTestResults] = useState<Record<number, ProviderTestResult>>({});
   const [testing, setTesting] = useState<number | null>(null);
   const [showKey, setShowKey] = useState(false);
 
@@ -154,6 +186,7 @@ export default function AdminCheckApis() {
       responseFormat: provider.responseFormat ?? "json",
       responseFormatParam: provider.responseFormatParam ?? "format",
       staticQuery: provider.staticQuery ?? "",
+      staticBody: provider.staticBody ?? "",
       description: provider.description ?? "",
       isActive: provider.isActive,
     });
@@ -223,10 +256,22 @@ export default function AdminCheckApis() {
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ identifier }),
       });
-      const data = await response.json().catch(() => ({}));
+      const data = await response.json().catch(() => ({})) as Partial<ProviderTestResult> & { error?: string };
       setTestResults((previous) => ({
         ...previous,
-        [provider.id]: { ok: Boolean(response.ok && data.ok), message: response.ok && data.ok ? `Connected · HTTP ${data.httpStatus ?? "200"}` : (data.error ?? `Provider returned HTTP ${data.httpStatus ?? response.status}`) },
+        [provider.id]: {
+          ok: Boolean(response.ok && data.ok),
+          message: response.ok && data.ok
+            ? `Connected · HTTP ${data.httpStatus ?? "200"}`
+            : (data.issues?.[0]?.message ?? data.error ?? `Provider returned HTTP ${data.httpStatus ?? response.status}`),
+          code: data.code,
+          httpStatus: data.httpStatus,
+          request: data.request,
+          response: data.response,
+          issues: data.issues,
+          preview: data.preview,
+          detail: data.detail,
+        },
       }));
     } catch {
       setTestResults((previous) => ({ ...previous, [provider.id]: { ok: false, message: "Network error during test." } }));
@@ -269,10 +314,11 @@ export default function AdminCheckApis() {
                 <div><Label htmlFor="provider-parameter">Identifier parameter</Label><Input id="provider-parameter" value={form.identifierParam} onChange={(event) => setField("identifierParam", event.target.value)} placeholder="imei" data-testid="input-provider-parameter" className="mt-1.5 font-mono text-xs" /></div>
                 <div><Label htmlFor="provider-key-location">API key location</Label><select id="provider-key-location" value={form.apiKeyLocation} onChange={(event) => setField("apiKeyLocation", event.target.value)} data-testid="select-provider-key-location" className="mt-1.5 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"><option value="header">Request header</option><option value="query">Query parameter</option><option value="body">Request body</option></select></div>
                 <div><Label htmlFor="provider-key-param">API key parameter</Label><Input id="provider-key-param" value={form.apiKeyParam} onChange={(event) => setField("apiKeyParam", event.target.value)} placeholder="X-API-Key" data-testid="input-provider-key-param" className="mt-1.5 font-mono text-xs" /></div>
-                <div><Label htmlFor="provider-response-format">Response format</Label><Input id="provider-response-format" value={form.responseFormat} onChange={(event) => setField("responseFormat", event.target.value)} placeholder="json" data-testid="input-provider-response-format" className="mt-1.5 font-mono text-xs" /></div>
+                <div><Label htmlFor="provider-response-format">Response format</Label><Input id="provider-response-format" value={form.responseFormat} onChange={(event) => setField("responseFormat", event.target.value)} placeholder="json" data-testid="input-provider-response-format" className="mt-1.5 font-mono text-xs" /><p className="mt-1 text-xs text-muted-foreground">Leave blank when the provider does not accept a format field, such as DeviceDecoded.</p></div>
                 <div><Label htmlFor="provider-response-param">Response format parameter</Label><Input id="provider-response-param" value={form.responseFormatParam} onChange={(event) => setField("responseFormatParam", event.target.value)} placeholder="format" data-testid="input-provider-response-param" className="mt-1.5 font-mono text-xs" /></div>
                 <label className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm md:mt-6"><input type="checkbox" checked={form.isActive} onChange={(event) => setField("isActive", event.target.checked)} data-testid="checkbox-provider-active" className="h-4 w-4 accent-cyan-700" /><span><span className="block font-semibold">Enable immediately</span><span className="text-xs text-muted-foreground">Public checks can use this route.</span></span></label>
                 <div className="md:col-span-2"><Label htmlFor="provider-static-query">Static query JSON <span className="font-normal text-muted-foreground">(optional)</span></Label><Textarea id="provider-static-query" rows={2} value={form.staticQuery} onChange={(event) => setField("staticQuery", event.target.value)} data-testid="textarea-provider-static-query" className="mt-1.5 font-mono text-xs" placeholder='{"country":"US"}' /></div>
+                <div className="md:col-span-2"><Label htmlFor="provider-static-body">Static request JSON <span className="font-normal text-muted-foreground">(optional, merged into POST body)</span></Label><Textarea id="provider-static-body" rows={2} value={form.staticBody} onChange={(event) => setField("staticBody", event.target.value)} data-testid="textarea-provider-static-body" className="mt-1.5 font-mono text-xs" placeholder='{"service":6}' /><p className="mt-1 text-xs text-muted-foreground">Use this for providers that require extra POST fields. The identifier field is added server-side.</p></div>
                 <div className="md:col-span-2"><Label htmlFor="provider-description">Internal note</Label><Textarea id="provider-description" rows={2} value={form.description} onChange={(event) => setField("description", event.target.value)} data-testid="textarea-provider-description" className="mt-1.5" placeholder="What this provider is used for…" /></div>
               </div>
               <div className="flex flex-col-reverse gap-2 border-t border-border pt-5 sm:flex-row sm:justify-end"><Button variant="outline" onClick={() => setShowForm(false)} data-testid="button-cancel-provider">Cancel</Button><Button onClick={() => void save()} disabled={saving} data-testid="button-save-provider">{saving ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}{saving ? "Saving…" : editing ? "Update provider" : "Save provider"}</Button></div>
@@ -303,7 +349,7 @@ function ProviderSkeleton() {
   return <div className="grid gap-4">{[1, 2].map((item) => <Card key={item}><CardContent className="space-y-4 p-5"><div className="h-5 w-56 animate-pulse rounded bg-muted" /><div className="h-3 w-2/3 animate-pulse rounded bg-muted" /><div className="h-10 animate-pulse rounded-lg bg-muted" /></CardContent></Card>)}</div>;
 }
 
-function ProviderCard({ provider, testValue, onTestValueChange, testResult, isTesting, onTest, onEdit, onToggle, onDelete }: { provider: Provider; testValue: string; onTestValueChange: (value: string) => void; testResult?: { ok: boolean; message: string }; isTesting: boolean; onTest: () => void; onEdit: () => void; onToggle: () => void; onDelete: () => void }) {
+function ProviderCard({ provider, testValue, onTestValueChange, testResult, isTesting, onTest, onEdit, onToggle, onDelete }: { provider: Provider; testValue: string; onTestValueChange: (value: string) => void; testResult?: ProviderTestResult; isTesting: boolean; onTest: () => void; onEdit: () => void; onToggle: () => void; onDelete: () => void }) {
   return (
     <Card className={`overflow-hidden transition-shadow hover:shadow-md ${provider.isActive ? "border-cyan-200 dark:border-cyan-900/60" : "opacity-80"}`} data-testid={`card-provider-${provider.id}`}>
       <CardContent className="space-y-5 p-5 sm:p-6">
@@ -316,8 +362,60 @@ function ProviderCard({ provider, testValue, onTestValueChange, testResult, isTe
           <div className="flex flex-wrap gap-2 lg:justify-end"><Button size="sm" variant="outline" onClick={onEdit} data-testid={`button-edit-provider-${provider.id}`}><Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit</Button><Button size="sm" variant="outline" onClick={onToggle} data-testid={`button-toggle-provider-${provider.id}`}>{provider.isActive ? "Disable" : "Enable"}</Button><Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={onDelete} data-testid={`button-delete-provider-${provider.id}`}><Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete</Button></div>
         </div>
         <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row"><Input value={testValue} onChange={(event) => onTestValueChange(event.target.value)} placeholder="Sample IMEI or serial for a connection test" data-testid={`input-test-provider-${provider.id}`} className="font-mono text-xs" /><Button variant="outline" onClick={onTest} disabled={isTesting} data-testid={`button-test-provider-${provider.id}`} className="shrink-0"><Wifi className="mr-2 h-4 w-4" />{isTesting ? "Testing…" : "Test connection"}</Button></div>
-        {testResult && <div data-testid={`status-test-provider-${provider.id}`} className={`flex items-center gap-2 text-sm font-semibold ${testResult.ok ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>{testResult.ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}{testResult.message}</div>}
+        {testResult && (
+          <div data-testid={`status-test-provider-${provider.id}`} className={`space-y-3 rounded-xl border p-3 text-sm ${testResult.ok ? "border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/60 dark:bg-emerald-950/20" : "border-rose-200 bg-rose-50/70 dark:border-rose-900/60 dark:bg-rose-950/20"}`}>
+            <div className={`flex items-start gap-2 font-semibold ${testResult.ok ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}>
+              {testResult.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+              <span>{testResult.message}</span>
+            </div>
+            {(testResult.request || testResult.response || testResult.issues?.length || testResult.preview || testResult.detail) && (
+              <details className="rounded-lg border border-black/10 bg-background/70 px-3 py-2 text-xs dark:border-white/10">
+                <summary className="cursor-pointer font-semibold text-foreground">View exact request & response diagnostics</summary>
+                <div className="mt-3 space-y-3">
+                  {testResult.response && (
+                    <div className="grid gap-2 sm:grid-cols-4">
+                      <DiagnosticMetric label="HTTP" value={`${testResult.response.status} ${testResult.response.statusText}`} />
+                      <DiagnosticMetric label="Duration" value={`${testResult.response.durationMs} ms`} />
+                      <DiagnosticMetric label="Content type" value={testResult.response.contentType || "unknown"} />
+                      <DiagnosticMetric label="Parsed JSON" value={testResult.response.parsedJson ? "yes" : "no"} />
+                    </div>
+                  )}
+                  {testResult.response?.cloudflareChallenge && (
+                    <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
+                      Cloudflare challenge detected. A server-side API call cannot pass this browser verification.
+                    </p>
+                  )}
+                  {testResult.request && (
+                    <div>
+                      <p className="mb-1 font-semibold text-foreground">Outgoing request (key masked)</p>
+                      <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-2 font-mono text-[11px]">{JSON.stringify(testResult.request, null, 2)}</pre>
+                    </div>
+                  )}
+                  {testResult.issues && testResult.issues.length > 0 && (
+                    <div>
+                      <p className="mb-1 font-semibold text-foreground">Provider diagnosis</p>
+                      <ul className="space-y-1">
+                        {testResult.issues.map((issue) => <li key={`${issue.code}-${issue.message}`}><span className="font-mono text-[10px] text-muted-foreground">{issue.code}</span> — {issue.message}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {testResult.response?.bodyPreview && (
+                    <div>
+                      <p className="mb-1 font-semibold text-foreground">Raw response preview</p>
+                      <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-2 font-mono text-[11px]">{testResult.response.bodyPreview}</pre>
+                    </div>
+                  )}
+                  {testResult.detail && <p className="text-muted-foreground">Transport detail: {testResult.detail}</p>}
+                </div>
+              </details>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
+}
+
+function DiagnosticMetric({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-md bg-muted/70 px-2.5 py-2"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-0.5 break-words font-mono text-[11px] text-foreground">{value}</p></div>;
 }

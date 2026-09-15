@@ -20,6 +20,7 @@ const providerFields = {
     responseFormat: checkProviders.responseFormat,
     responseFormatParam: checkProviders.responseFormatParam,
     staticQuery: checkProviders.staticQuery,
+  staticBody: checkProviders.staticBody,
   description: checkProviders.description,
   isActive: checkProviders.isActive,
   createdAt: checkProviders.createdAt,
@@ -40,6 +41,7 @@ router.post("/check-providers", authenticate, requireAdmin, async (req: AuthRequ
     const {
       slug, name, apiEndpoint, apiKey, apiUser, apiFormat, httpMethod, identifierParam, description, isActive,
       apiKeyLocation, apiKeyParam, responseFormat, responseFormatParam, staticQuery,
+      staticBody,
     } = req.body as Record<string, unknown>;
 
     if (!slug || !name || !apiEndpoint || !apiKey) {
@@ -58,9 +60,10 @@ router.post("/check-providers", authenticate, requireAdmin, async (req: AuthRequ
       identifierParam: String(identifierParam || "imei").trim(),
       apiKeyLocation: ["header", "query", "body"].includes(String(apiKeyLocation)) ? String(apiKeyLocation) : "header",
       apiKeyParam: String(apiKeyParam || "key").trim(),
-      responseFormat: String(responseFormat || "json").trim(),
-      responseFormatParam: String(responseFormatParam || "format").trim(),
+      responseFormat: responseFormat === undefined || responseFormat === null ? "json" : String(responseFormat).trim(),
+      responseFormatParam: responseFormatParam === undefined || responseFormatParam === null ? "format" : String(responseFormatParam).trim(),
       staticQuery: staticQuery ? String(staticQuery).trim() : null,
+      staticBody: staticBody ? String(staticBody).trim() : null,
       description: description ? String(description).trim() : null,
       isActive: Boolean(isActive),
     }).returning(providerFields);
@@ -81,7 +84,7 @@ router.patch("/check-providers/:id", authenticate, requireAdmin, async (req: Aut
     for (const key of ["name", "apiEndpoint", "apiUser", "identifierParam", "apiKeyParam", "responseFormat", "responseFormatParam"]) {
       if (body[key] !== undefined) update[key] = String(body[key] ?? "").trim();
     }
-    for (const key of ["staticQuery", "description"]) {
+    for (const key of ["staticQuery", "staticBody", "description"]) {
       if (body[key] !== undefined) update[key] = body[key] ? String(body[key]).trim() : null;
     }
     if (body.slug !== undefined) update.slug = String(body.slug).trim().toLowerCase();
@@ -119,16 +122,28 @@ router.post("/check-providers/:id/test", authenticate, requireAdmin, async (req:
       return;
     }
 
-    const { response, data } = await requestCheckProvider(provider, identifier);
-    res.status(response.ok ? 200 : 502).json({
-      ok: response.ok,
-      httpStatus: response.status,
+    const result = await requestCheckProvider(provider, identifier);
+    const hasBlockingIssue = result.issues.some((issue) => issue.severity === "error");
+    res.status(result.response.ok && !hasBlockingIssue ? 200 : 502).json({
+      ok: result.response.ok && !hasBlockingIssue,
+      httpStatus: result.response.status,
       provider: provider.name,
-      preview: typeof data === "string" ? data.slice(0, 500) : data,
+      request: result.request,
+      response: result.responseDiagnostics,
+      issues: result.issues,
+      preview: typeof result.data === "string" ? result.data.slice(0, 1200) : result.data,
     });
   } catch (err) {
     req.log.error({ err }, "Admin test check provider error");
-    res.status(502).json({ error: "Provider test failed" });
+    const error = err as { code?: string; message?: string };
+    res.status(502).json({
+      ok: false,
+      error: error.code === "PROVIDER_TIMEOUT"
+        ? "Provider request timed out after 15 seconds."
+        : "Provider test failed before a response was received.",
+      code: error.code ?? "PROVIDER_REQUEST_FAILED",
+      detail: error.message ?? "Unknown provider request error",
+    });
   }
 });
 

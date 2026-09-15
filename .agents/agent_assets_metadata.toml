@@ -6,15 +6,18 @@ id = "k8eGsU0kkMBNPOrKEFzgm"
 uri = "file://iUnlockd-source-v2.zip"
 type = "unspecified"
 title = "iUnlockd Clean Source v2"
+logical_id = "ee7fbb8e-3b84-4862-8f28-3e44249b06ad"
 
 [[outputs]]
 id = "IKj2SbtLXuwViFvSzdmDZ"
 uri = "file://iunlockd-v4.tar.gz"
 type = "unspecified"
 title = "iUnlockd v4 — Fresh Code (2FA + Merchant Sync)"
+logical_id = "2b67f081-b266-4b7a-9ea3-19d37992b0b3"
 
 [[outputs]]
 id = "NL8wOR58rQi6hw4HcIQl9"
 uri = "file://iunlockd-v5.tar.gz"
 type = "unspecified"
 title = "iUnlockd v5 — Passkey + Merchant Forwarding + Deposit Fix"
+logical_id = "8b84ab26-5cc0-47af-9778-ee6f9aeacd25"
