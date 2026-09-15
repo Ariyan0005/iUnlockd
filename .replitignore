@@ -3,3 +3,6 @@
 
 # No need to store the pnpm store twice.
 .local
+
+# Replit uploads and screenshots are local-only and must not ship to VPS deploys.
+attached_assets/
