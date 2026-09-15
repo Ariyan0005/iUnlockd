@@ -252,7 +252,7 @@ function Sidebar({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Admin() {
-  const { user } = useAuth();
+  const { user, token, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
@@ -320,11 +320,6 @@ export default function Admin() {
     [filteredSvcs, svcGroupBy]);
   const [depositSearch, setDepositSearch] = useState("");
 
-  useEffect(() => {
-    const token = localStorage.getItem("iu_token");
-    if (token) loadAll();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem("iu_token")}` });
 
   const apiFetch = (url: string, options: RequestInit = {}) => {
@@ -365,6 +360,15 @@ export default function Admin() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!token || user?.role !== "admin") {
+      setLoading(false);
+      return;
+    }
+    void loadAll();
+  }, [authLoading, token, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleCrypto = async () => {
     setTogglingCrypto(true);
