@@ -3,8 +3,8 @@ import { pgTable, serial, varchar, boolean, timestamp, text } from "drizzle-orm/
 export const merchants = pgTable("merchants", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  apiEndpoint: varchar("api_endpoint", { length: 500 }).notNull(),
-  apiKey: varchar("api_key", { length: 500 }).notNull(),
+  apiEndpoint: text("api_endpoint").notNull(),
+  apiKey: text("api_key").notNull(),
   apiUser: varchar("api_user", { length: 255 }),
   apiFormat: varchar("api_format", { length: 50 }).notNull().default("rest"),
   description: text("description"),
