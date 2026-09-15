@@ -1,0 +1,1 @@
+- [Provider credential safety](provider-credential-safety.md) — keep provider and database credentials outside source control and configure them through environment-backed secrets.
