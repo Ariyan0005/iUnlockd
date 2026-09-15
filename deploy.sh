@@ -9,6 +9,7 @@ set -Eeuo pipefail
 # Optional overrides:
 #   WEB_ROOT=/var/www/html/iunlockd API_PORT=5000 bash deploy.sh
 #   DEPLOY_API=0 bash deploy.sh
+#   DB_PUSH_FORCE=1 bash deploy.sh
 #
 # Required on the VPS:
 #   git, node, pnpm, and (for the default web/API flow) nginx and pm2
@@ -23,6 +24,7 @@ WEB_DIST="$REPO_DIR/artifacts/sales-assistant/dist/public"
 FRONTEND_BUILD_PORT="${FRONTEND_BUILD_PORT:-4173}"
 
 DEPLOY_API="${DEPLOY_API:-1}"
+DB_PUSH_FORCE="${DB_PUSH_FORCE:-0}"
 API_PORT="${API_PORT:-5000}"
 API_ENTRY="$REPO_DIR/artifacts/api-server/dist/index.mjs"
 API_PM2_NAME="${API_PM2_NAME:-iunlockd-api}"
@@ -128,6 +130,44 @@ install_dependencies() {
   pnpm install --frozen-lockfile
 }
 
+load_database_url() {
+  [ -n "${DATABASE_URL:-}" ] && return
+
+  if ! command -v pm2 >/dev/null 2>&1 ||
+    ! pm2 describe "$API_PM2_NAME" >/dev/null 2>&1; then
+    return
+  fi
+
+  local api_pid
+  api_pid="$(pm2 pid "$API_PM2_NAME" 2>/dev/null | tr -d '[:space:]')"
+  if [[ "$api_pid" =~ ^[0-9]+$ ]] && [ -r "/proc/${api_pid}/environ" ]; then
+    export DATABASE_URL="$(
+      tr '\0' '\n' < "/proc/${api_pid}/environ" |
+        sed -n 's/^DATABASE_URL=//p' |
+        head -n 1
+    )"
+  fi
+}
+
+push_database_schema() {
+  [ "$DEPLOY_API" = "1" ] || {
+    log "Skipping database schema push because DEPLOY_API=$DEPLOY_API"
+    return
+  }
+
+  load_database_url
+  [ -n "${DATABASE_URL:-}" ] ||
+    die "DATABASE_URL is not set. Export it before deploying or keep it in the running PM2 API environment."
+
+  if [ "$DB_PUSH_FORCE" = "1" ]; then
+    log "Pushing database schema in force mode"
+    pnpm --filter @workspace/db run push-force
+  else
+    log "Pushing database schema"
+    pnpm --filter @workspace/db run push
+  fi
+}
+
 build_frontend() {
   log "Building iUnlockd frontend"
   PORT="$FRONTEND_BUILD_PORT" BASE_PATH="/" NODE_ENV=production \
@@ -223,6 +263,7 @@ main() {
 
   sync_source
   install_dependencies
+  push_database_schema
   build_frontend
   build_api
   publish_frontend
