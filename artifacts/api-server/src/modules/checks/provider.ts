@@ -210,7 +210,12 @@ export function buildCheckRequest(
   const param = provider.identifierParam?.trim() || "imei";
   const apiKeyLocation = provider.apiKeyLocation || "header";
   const apiKeyParam = provider.apiKeyParam?.trim() || "key";
-  const responseFormat = provider.responseFormat?.trim() || "json";
+  // An empty response format is intentional for providers such as DeviceDecoded
+  // that reject unknown fields. Only use the legacy default when the column is
+  // missing entirely.
+  const responseFormat = provider.responseFormat === undefined || provider.responseFormat === null
+    ? "json"
+    : provider.responseFormat.trim();
   const responseFormatParam = provider.responseFormatParam?.trim() || "format";
   const headers: Record<string, string> = {
     Accept: "application/json",
