@@ -1,0 +1,4 @@
+- [Provider credential safety](provider-credential-safety.md) — keep provider and database credentials outside source control and configure them through environment-backed secrets.
+- [Workspace lockfiles](workspace-lockfiles.md) — any workspace manifest change must be reflected in pnpm-lock.yaml before frozen deployment installs.
+- [Provider diagnostics](provider-diagnostics.md) — treat HTTP success with HTML, invalid JSON, or Cloudflare challenge as provider failures and redact request credentials before display.
+- [Artifact preview paths](artifact-preview-paths.md) — imported artifacts can collide on `/`; keep one primary app at root and move secondary apps to a unique preview path.
