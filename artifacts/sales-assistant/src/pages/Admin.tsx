@@ -252,7 +252,7 @@ function Sidebar({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Admin() {
-  const { user, token, isLoading: authLoading } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
@@ -335,40 +335,42 @@ export default function Admin() {
 
   const loadAll = async () => {
     setLoading(true);
-    const results = await Promise.allSettled([
-      apiFetch("/api/admin/deposits",  { headers: authHeader() }),
-      apiFetch("/api/admin/orders",    { headers: authHeader() }),
-      apiFetch("/api/admin/users",     { headers: authHeader() }),
-      apiFetch("/api/admin/stats",     { headers: authHeader() }),
-      apiFetch("/api/admin/services",  { headers: authHeader() }),
-      apiFetch("/api/admin/merchants", { headers: authHeader() }),
-      apiFetch("/api/admin/settings",  { headers: authHeader() }),
-    ]);
-    const safeJson = async (r: PromiseSettledResult<Response>) => {
-      if (r.status !== "fulfilled" || !r.value.ok) return null;
-      return r.value.json().catch(() => null);
-    };
-    const [dData, oData, uData, sData, svData, mData, stData] = await Promise.all(results.map(safeJson));
-    if (dData !== null)  setDeposits(Array.isArray(dData) ? dData : []);
-    if (oData !== null)  setOrders(Array.isArray(oData) ? oData : []);
-    if (uData !== null)  setUsers(Array.isArray(uData) ? uData : []);
-    if (sData !== null)  setStats(sData);
-    if (svData !== null) setServices(Array.isArray(svData) ? svData : []);
-    if (mData !== null)  setMerchants(Array.isArray(mData) ? mData : []);
-    if (stData !== null && typeof stData === "object") {
-      setCryptoEnabled((stData as Record<string, string>)["crypto_enabled"] !== "false");
+    try {
+      const results = await Promise.allSettled([
+        apiFetch("/api/admin/deposits",  { headers: authHeader() }),
+        apiFetch("/api/admin/orders",    { headers: authHeader() }),
+        apiFetch("/api/admin/users",     { headers: authHeader() }),
+        apiFetch("/api/admin/stats",     { headers: authHeader() }),
+        apiFetch("/api/admin/services",  { headers: authHeader() }),
+        apiFetch("/api/admin/merchants", { headers: authHeader() }),
+        apiFetch("/api/admin/settings",  { headers: authHeader() }),
+      ]);
+      const safeJson = async (r: PromiseSettledResult<Response>) => {
+        if (r.status !== "fulfilled" || !r.value.ok) return null;
+        return r.value.json().catch(() => null);
+      };
+      const [dData, oData, uData, sData, svData, mData, stData] = await Promise.all(results.map(safeJson));
+      if (dData !== null)  setDeposits(Array.isArray(dData) ? dData : []);
+      if (oData !== null)  setOrders(Array.isArray(oData) ? oData : []);
+      if (uData !== null)  setUsers(Array.isArray(uData) ? uData : []);
+      if (sData !== null)  setStats(sData);
+      if (svData !== null) setServices(Array.isArray(svData) ? svData : []);
+      if (mData !== null)  setMerchants(Array.isArray(mData) ? mData : []);
+      if (stData !== null && typeof stData === "object") {
+        setCryptoEnabled((stData as Record<string, string>)["crypto_enabled"] !== "false");
+      }
+    } catch {
+      flash("error", "Could not load admin data. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!token || user?.role !== "admin") {
-      setLoading(false);
-      return;
-    }
+    const storedToken = token ?? localStorage.getItem("iu_token");
+    if (!storedToken || user?.role !== "admin") return;
     void loadAll();
-  }, [authLoading, token, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleCrypto = async () => {
     setTogglingCrypto(true);
