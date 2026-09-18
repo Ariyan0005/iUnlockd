@@ -4,6 +4,7 @@ import { orders, services, users } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { authenticate, type AuthRequest } from "../middleware/authenticate";
 import { submitMerchantOrder } from "../modules/merchant/order";
+import { resolveIdentifierType } from "../modules/services/orderConfig";
 
 const router = Router();
 
@@ -42,8 +43,7 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
     const [service] = await db.select().from(services).where(eq(services.id, serviceId)).limit(1);
     if (!service || !service.isActive) { res.status(404).json({ error: "Service not found or inactive" }); return; }
 
-    // Missing order metadata must never turn into an IMEI order by default.
-    const identType = service.identifierType ?? "none";
+    const identType = resolveIdentifierType(service);
     if (identType !== "none" && !identifier?.trim()) {
       res.status(400).json({ error: `${service.fieldLabel ?? "Identifier"} is required` }); return;
     }

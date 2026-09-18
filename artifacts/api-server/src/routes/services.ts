@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { services, merchants } from "@workspace/db";
 import { eq, and, or, isNull } from "drizzle-orm";
+import { resolveIdentifierType } from "../modules/services/orderConfig";
 
 const router = Router();
 
@@ -54,7 +55,7 @@ router.get("/", async (req, res) => {
       price: s.price,
       isActive: s.isActive,
       apiServiceId: s.apiServiceId,
-      identifierType: s.identifierType,
+      identifierType: resolveIdentifierType(s),
       fieldLabel: s.fieldLabel,
       requireQuantity: s.requireQuantity,
       requireUsername: s.requireUsername,
@@ -85,7 +86,7 @@ router.get("/:id", async (req, res) => {
         price: service.price,
         isActive: service.isActive,
         apiServiceId: service.apiServiceId,
-        identifierType: service.identifierType,
+        identifierType: resolveIdentifierType(service),
         fieldLabel: service.fieldLabel,
         requireQuantity: service.requireQuantity,
         requireUsername: service.requireUsername,

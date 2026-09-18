@@ -2,6 +2,7 @@ import { db } from "@workspace/db";
 import { services, merchants } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../../lib/logger";
+import { resolveIdentifierType } from "../services/orderConfig";
 
 interface MerchantService {
   id?: string | number;
@@ -52,9 +53,13 @@ function detectServiceType(svc: MerchantService): string {
 }
 
 function detectIdentifierType(svc: MerchantService, serviceType: string): string {
-  const explicit = String(svc.identifierType ?? "").trim().toLowerCase();
-  if (["imei", "sn", "email", "username", "none"].includes(explicit)) return explicit;
-  return ["imei", "server"].includes(serviceType) ? "imei" : "none";
+  return resolveIdentifierType({
+    name: svc.name,
+    category: svc.category,
+    serviceType,
+    identifierType: svc.identifierType,
+    fieldLabel: svc.fieldLabel,
+  });
 }
 
 export function buildMerchantHeaders(apiKey: string, apiUser?: string | null): Record<string, string> {

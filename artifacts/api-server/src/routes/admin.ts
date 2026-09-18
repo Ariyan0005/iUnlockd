@@ -6,6 +6,7 @@ import { eq, desc, sql, count, notInArray } from "drizzle-orm";
 import { authenticate, requireAdmin, type AuthRequest } from "../middleware/authenticate";
 import { syncMerchantProducts, buildMerchantHeaders } from "../modules/merchant/sync";
 import { checkMerchantOrderStatus } from "../modules/merchant/order";
+import { resolveIdentifierType } from "../modules/services/orderConfig";
 
 const router = Router();
 
@@ -254,7 +255,10 @@ router.patch("/deposits/:id", authenticate, requireAdmin, async (req: AuthReques
 router.get("/services", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
     const all = await db.select().from(services).orderBy(desc(services.createdAt));
-    res.json(all);
+    res.json(all.map((service) => ({
+      ...service,
+      identifierType: resolveIdentifierType(service),
+    })));
   } catch (err) {
     req.log.error({ err }, "Admin get services error");
     res.status(500).json({ error: "Failed to get services" });
