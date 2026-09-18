@@ -15,14 +15,46 @@ interface MerchantService {
   status?: string;
   type?: string;
   category?: string;
+  identifierType?: string;
+  fieldLabel?: string;
+  requireQuantity?: boolean;
+  requireUsername?: boolean;
+  requireEmail?: boolean;
 }
 
 function detectServiceType(svc: MerchantService): string {
   const name = (svc.name ?? "").toLowerCase();
   const cat = (svc.type ?? svc.category ?? "").toLowerCase();
   if (cat.includes("tool") || name.includes("tool")) return "tool";
+  if (
+    cat.includes("gift") ||
+    cat.includes("voucher") ||
+    name.includes("gift card") ||
+    name.includes("voucher")
+  ) return "gift_card";
+  if (
+    cat.includes("game") ||
+    cat.includes("topup") ||
+    cat.includes("top-up") ||
+    name.includes("game top") ||
+    name.includes("game recharge")
+  ) return "game";
   if (cat.includes("server") || name.includes("server")) return "server";
-  return "imei";
+  if (
+    cat.includes("imei") ||
+    name.includes("imei") ||
+    name.includes("mdm") ||
+    name.includes("icloud") ||
+    name.includes("bypass") ||
+    name.includes("carrier unlock")
+  ) return "imei";
+  return "other";
+}
+
+function detectIdentifierType(svc: MerchantService, serviceType: string): string {
+  const explicit = String(svc.identifierType ?? "").trim().toLowerCase();
+  if (["imei", "sn", "email", "username", "none"].includes(explicit)) return explicit;
+  return ["imei", "server"].includes(serviceType) ? "imei" : "none";
 }
 
 export function buildMerchantHeaders(apiKey: string, apiUser?: string | null): Record<string, string> {
@@ -138,16 +170,36 @@ async function syncSingleMerchant(merchant: {
       svc.status !== "disabled" &&
       svc.status !== "0";
     const serviceType = detectServiceType(svc);
+    const identifierType = detectIdentifierType(svc, serviceType);
 
     if (existingMap.has(apiId)) {
       toUpdate.push({
         apiId,
-        data: { name: svc.name, price, description: svc.description ?? null, isActive, serviceType, category: serviceType, merchantId: merchant.id },
+        data: {
+          name: svc.name,
+          price,
+          description: svc.description ?? null,
+          isActive,
+          serviceType,
+          category: serviceType,
+          merchantId: merchant.id,
+          ...(svc.identifierType === undefined
+            ? {}
+            : { identifierType, fieldLabel: svc.fieldLabel ?? null }),
+          ...(svc.requireQuantity === undefined ? {} : { requireQuantity: svc.requireQuantity }),
+          ...(svc.requireUsername === undefined ? {} : { requireUsername: svc.requireUsername }),
+          ...(svc.requireEmail === undefined ? {} : { requireEmail: svc.requireEmail }),
+        },
       });
     } else {
       toInsert.push({
         name: svc.name, category: serviceType, serviceType, price,
         description: svc.description ?? null, isActive, apiServiceId: apiId, merchantId: merchant.id,
+        identifierType,
+        fieldLabel: svc.fieldLabel ?? null,
+        requireQuantity: svc.requireQuantity ?? false,
+        requireUsername: svc.requireUsername ?? false,
+        requireEmail: svc.requireEmail ?? false,
       });
     }
   }

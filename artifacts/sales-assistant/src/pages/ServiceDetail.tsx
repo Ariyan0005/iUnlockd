@@ -11,8 +11,8 @@ import { Clock, Wallet, AlertCircle, ArrowLeft, CheckCircle2, Minus, Plus } from
 interface Service {
   id: number; name: string; description: string; price: string;
   deliveryTime: string; processingTime: string; serviceType: string; category: string;
-  identifierType: string; fieldLabel: string | null;
-  requireQuantity: boolean; requireUsername: boolean; requireEmail: boolean;
+  identifierType?: string | null; fieldLabel?: string | null;
+  requireQuantity?: boolean; requireUsername?: boolean; requireEmail?: boolean;
 }
 
 export default function ServiceDetail() {
@@ -38,17 +38,24 @@ export default function ServiceDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const identType = service?.identifierType ?? "imei";
+  // The API owns the order fields. Missing metadata means this product has no
+  // identifier form; it must never silently become an IMEI form.
+  const identType = service?.identifierType?.toLowerCase() || "none";
   const isIMEI = identType === "imei";
   const isSN = identType === "sn";
   const isEmailIdent = identType === "email";
   const hasIdentifier = identType !== "none";
+  const hasOrderFields =
+    hasIdentifier ||
+    !!service?.requireQuantity ||
+    !!service?.requireUsername ||
+    !!service?.requireEmail;
   const fieldLabel = service?.fieldLabel ||
     (isIMEI ? "IMEI Number" : isSN ? "Serial Number" : isEmailIdent ? "Email Address" : identType === "username" ? "Username" : "Identifier");
   const imeiValid = !isIMEI || /^\d{15}$/.test(identifier.replace(/\s/g, ""));
 
-  const handleOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleOrder = async (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     if (!user) { navigate("/login", { state: { from: `/services/${id}` } }); return; }
     setError("");
     if (isIMEI && !imeiValid) { setError("IMEI must be exactly 15 digits."); return; }
@@ -136,6 +143,25 @@ export default function ServiceDetail() {
             </div>
           )}
           <div className="border-t border-border pt-4">
+            {!hasOrderFields ? (
+              <>
+                {!user ? (
+                  <Button type="button" className="w-full" onClick={() => navigate("/login", { state: { from: `/services/${id}` } })}>
+                    Login to Purchase
+                  </Button>
+                ) : (
+                  <Button type="button" className="w-full" disabled={submitting || !canAfford} onClick={() => void handleOrder()}>
+                    {submitting ? "Processing…" : `Purchase — $${totalPrice.toFixed(2)}`}
+                  </Button>
+                )}
+                {!canAfford && user && (
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    Insufficient balance. Please <button type="button" className="text-primary underline" onClick={() => navigate("/deposit")}>deposit funds</button> first.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
             <p className="text-sm font-semibold mb-4">Order form</p>
             <form onSubmit={handleOrder} className="flex flex-col gap-4">
               {error && (
@@ -202,6 +228,8 @@ export default function ServiceDetail() {
                 </p>
               )}
             </form>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

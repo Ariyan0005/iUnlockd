@@ -42,15 +42,25 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
     const [service] = await db.select().from(services).where(eq(services.id, serviceId)).limit(1);
     if (!service || !service.isActive) { res.status(404).json({ error: "Service not found or inactive" }); return; }
 
-    const identType = service.identifierType ?? "imei";
+    // Missing order metadata must never turn into an IMEI order by default.
+    const identType = service.identifierType ?? "none";
     if (identType !== "none" && !identifier?.trim()) {
       res.status(400).json({ error: `${service.fieldLabel ?? "Identifier"} is required` }); return;
+    }
+    if (service.requireUsername && !orderUsername?.trim()) {
+      res.status(400).json({ error: "Username is required" }); return;
+    }
+    if (service.requireEmail && !orderEmail?.trim()) {
+      res.status(400).json({ error: "Email is required" }); return;
+    }
+    if (service.requireEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orderEmail!.trim())) {
+      res.status(400).json({ error: "Please enter a valid email address" }); return;
     }
 
     const [user] = await db.select().from(users).where(eq(users.id, req.userId!)).limit(1);
     const balance = parseFloat(user.balance ?? "0");
     const price = parseFloat(service.price);
-    const qty = Math.max(1, quantity ?? 1);
+    const qty = service.requireQuantity ? Math.max(1, quantity ?? 1) : 1;
     const totalPrice = price * qty;
 
     if (balance < totalPrice) { res.status(400).json({ error: "Insufficient balance. Please add funds first." }); return; }

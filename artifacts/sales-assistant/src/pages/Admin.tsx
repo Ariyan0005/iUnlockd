@@ -521,7 +521,8 @@ export default function Admin() {
   const openAddService = () => { setEditingService(null); setServiceForm(EMPTY_SERVICE); setShowServiceModal(true); };
   const openEditService = (svc: Service) => {
     setEditingService(svc);
-    setServiceForm({ name: svc.name, category: svc.category, price: svc.price, description: svc.description || "", deliveryTime: svc.deliveryTime || "", identifierType: svc.identifierType ?? "imei", fieldLabel: svc.fieldLabel ?? "", requireQuantity: svc.requireQuantity ?? false, requireUsername: svc.requireUsername ?? false, requireEmail: svc.requireEmail ?? false });
+    const noIdentifierCategory = ["tool", "game", "gift_card", "other"].includes(svc.category);
+    setServiceForm({ name: svc.name, category: svc.category, price: svc.price, description: svc.description || "", deliveryTime: svc.deliveryTime || "", identifierType: svc.identifierType ?? (noIdentifierCategory ? "none" : "imei"), fieldLabel: svc.fieldLabel ?? "", requireQuantity: svc.requireQuantity ?? false, requireUsername: svc.requireUsername ?? false, requireEmail: svc.requireEmail ?? false });
     setShowServiceModal(true);
   };
 
@@ -1226,12 +1227,15 @@ export default function Admin() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label>Category *</Label>
-                  <Select value={serviceForm.category} onValueChange={(v) => setServiceForm(f => ({ ...f, category: v }))}>
+                  <Select value={serviceForm.category} onValueChange={(v) => setServiceForm(f => ({ ...f, category: v, identifierType: ["tool", "game", "gift_card", "other"].includes(v) ? "none" : f.identifierType === "none" ? "imei" : f.identifierType }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="imei">IMEI Unlock</SelectItem>
                       <SelectItem value="server">Server Unlock</SelectItem>
                       <SelectItem value="tool">Remote / Rent Service</SelectItem>
+                      <SelectItem value="game">Game / Top-up</SelectItem>
+                      <SelectItem value="gift_card">Gift Card / Voucher</SelectItem>
+                      <SelectItem value="other">Other Product</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

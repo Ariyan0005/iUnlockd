@@ -23,6 +23,11 @@ router.get("/", async (req, res) => {
         apiServiceId: services.apiServiceId,
         merchantId: services.merchantId,
         merchantActive: merchants.isActive,
+        identifierType: services.identifierType,
+        fieldLabel: services.fieldLabel,
+        requireQuantity: services.requireQuantity,
+        requireUsername: services.requireUsername,
+        requireEmail: services.requireEmail,
       })
       .from(services)
       .leftJoin(merchants, eq(services.merchantId, merchants.id))
@@ -49,6 +54,11 @@ router.get("/", async (req, res) => {
       price: s.price,
       isActive: s.isActive,
       apiServiceId: s.apiServiceId,
+      identifierType: s.identifierType,
+      fieldLabel: s.fieldLabel,
+      requireQuantity: s.requireQuantity,
+      requireUsername: s.requireUsername,
+      requireEmail: s.requireEmail,
     })));
   } catch (err) {
     req.log.error({ err }, "Get services error");
@@ -75,6 +85,11 @@ router.get("/:id", async (req, res) => {
         price: service.price,
         isActive: service.isActive,
         apiServiceId: service.apiServiceId,
+        identifierType: service.identifierType,
+        fieldLabel: service.fieldLabel,
+        requireQuantity: service.requireQuantity,
+        requireUsername: service.requireUsername,
+        requireEmail: service.requireEmail,
       }
     });
   } catch (err) {

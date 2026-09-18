@@ -263,9 +263,14 @@ router.get("/services", authenticate, requireAdmin, async (req: AuthRequest, res
 
 router.post("/services", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
-    const { name, category, price, description, deliveryTime, serviceType, merchantId } = req.body as {
+    const {
+      name, category, price, description, deliveryTime, serviceType, merchantId,
+      identifierType, fieldLabel, requireQuantity, requireUsername, requireEmail,
+    } = req.body as {
       name: string; category: string; price: string;
       description?: string; deliveryTime?: string; serviceType?: string; merchantId?: number;
+      identifierType?: string; fieldLabel?: string;
+      requireQuantity?: boolean; requireUsername?: boolean; requireEmail?: boolean;
     };
     if (!name || !category || !price) {
       res.status(400).json({ error: "Name, category and price are required" });
@@ -277,6 +282,11 @@ router.post("/services", authenticate, requireAdmin, async (req: AuthRequest, re
       price, description: description ?? null,
       deliveryTime: deliveryTime ?? null,
       merchantId: merchantId ?? null,
+      identifierType: identifierType ?? (category === "imei" || category === "server" ? "imei" : "none"),
+      fieldLabel: fieldLabel ?? null,
+      requireQuantity: requireQuantity ?? false,
+      requireUsername: requireUsername ?? false,
+      requireEmail: requireEmail ?? false,
     }).returning();
     res.status(201).json(service);
   } catch (err) {
@@ -288,9 +298,14 @@ router.post("/services", authenticate, requireAdmin, async (req: AuthRequest, re
 router.patch("/services/:id", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
     const id = Number(req.params["id"]);
-    const { name, category, price, description, deliveryTime, isActive, serviceType, merchantId } = req.body as {
+    const {
+      name, category, price, description, deliveryTime, isActive, serviceType, merchantId,
+      identifierType, fieldLabel, requireQuantity, requireUsername, requireEmail,
+    } = req.body as {
       name?: string; category?: string; price?: string; description?: string;
       deliveryTime?: string; isActive?: boolean; serviceType?: string; merchantId?: number | null;
+      identifierType?: string; fieldLabel?: string | null;
+      requireQuantity?: boolean; requireUsername?: boolean; requireEmail?: boolean;
     };
     const update: Record<string, unknown> = {};
     if (name !== undefined) update["name"] = name;
@@ -301,6 +316,11 @@ router.patch("/services/:id", authenticate, requireAdmin, async (req: AuthReques
     if (deliveryTime !== undefined) update["deliveryTime"] = deliveryTime;
     if (isActive !== undefined) update["isActive"] = isActive;
     if (merchantId !== undefined) update["merchantId"] = merchantId;
+    if (identifierType !== undefined) update["identifierType"] = identifierType;
+    if (fieldLabel !== undefined) update["fieldLabel"] = fieldLabel;
+    if (requireQuantity !== undefined) update["requireQuantity"] = requireQuantity;
+    if (requireUsername !== undefined) update["requireUsername"] = requireUsername;
+    if (requireEmail !== undefined) update["requireEmail"] = requireEmail;
 
     await db.update(services).set(update).where(eq(services.id, id));
     const [service] = await db.select().from(services).where(eq(services.id, id)).limit(1);
