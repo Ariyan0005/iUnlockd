@@ -29,6 +29,7 @@ router.get("/", async (req, res) => {
         requireQuantity: services.requireQuantity,
         requireUsername: services.requireUsername,
         requireEmail: services.requireEmail,
+         orderFields: services.orderFields,
       })
       .from(services)
       .leftJoin(merchants, eq(services.merchantId, merchants.id))
@@ -60,6 +61,7 @@ router.get("/", async (req, res) => {
       requireQuantity: s.requireQuantity,
       requireUsername: s.requireUsername,
       requireEmail: s.requireEmail,
+      orderFields: s.orderFields ?? [],
     })));
   } catch (err) {
     req.log.error({ err }, "Get services error");
@@ -91,6 +93,7 @@ router.get("/:id", async (req, res) => {
         requireQuantity: service.requireQuantity,
         requireUsername: service.requireUsername,
         requireEmail: service.requireEmail,
+       orderFields: service.orderFields ?? [],
       }
     });
   } catch (err) {

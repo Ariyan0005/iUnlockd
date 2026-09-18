@@ -3,6 +3,8 @@ import { services, merchants } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../../lib/logger";
 import { resolveIdentifierType } from "../services/orderConfig";
+import { fieldNameMatches, normalizeMerchantFields } from "./fieldSchema";
+import type { ServiceOrderField } from "@workspace/db";
 
 interface MerchantService {
   id?: string | number;
@@ -21,6 +23,7 @@ interface MerchantService {
   requireQuantity?: boolean;
   requireUsername?: boolean;
   requireEmail?: boolean;
+  fields?: unknown;
 }
 
 function detectServiceType(svc: MerchantService): string {
@@ -53,6 +56,11 @@ function detectServiceType(svc: MerchantService): string {
 }
 
 function detectIdentifierType(svc: MerchantService, serviceType: string): string {
+  const fields = normalizeMerchantFields(svc.fields);
+  if (fields.some((field) => fieldNameMatches(field, /\bimei\b/i))) return "imei";
+  if (fields.some((field) => fieldNameMatches(field, /\b(serial|sn)\b/i))) return "sn";
+  if (fields.some((field) => fieldNameMatches(field, /\bemail\b/i))) return "email";
+  if (fields.some((field) => fieldNameMatches(field, /\busername\b/i))) return "username";
   return resolveIdentifierType({
     name: svc.name,
     category: svc.category,
@@ -134,6 +142,7 @@ export async function fetchMerchantServiceList(
       price: String(p["price"] ?? p["cost"] ?? "0"),
       description: p["description"] ? String(p["description"]) : undefined,
       type: p["type"] ? String(p["type"]) : undefined,
+      fields: p["fields"],
       active: true,
     }));
   }
@@ -176,6 +185,14 @@ async function syncSingleMerchant(merchant: {
       svc.status !== "0";
     const serviceType = detectServiceType(svc);
     const identifierType = detectIdentifierType(svc, serviceType);
+    const orderFields = normalizeMerchantFields(svc.fields);
+    const hasMerchantFields = svc.fields !== undefined;
+    const quantityFromFields = orderFields.some((field) => fieldNameMatches(field, /^quantity$/i));
+    const usernameFromFields = orderFields.some((field) => fieldNameMatches(field, /^username$/i));
+    const emailFromFields = orderFields.some((field) => fieldNameMatches(field, /^email$/i));
+    const identifierField = orderFields.find((field) =>
+      fieldNameMatches(field, /\b(imei|serial|sn|email|username)\b/i)
+    );
 
     if (existingMap.has(apiId)) {
       toUpdate.push({
@@ -188,12 +205,13 @@ async function syncSingleMerchant(merchant: {
           serviceType,
           category: serviceType,
           merchantId: merchant.id,
-          ...(svc.identifierType === undefined
-            ? {}
-            : { identifierType, fieldLabel: svc.fieldLabel ?? null }),
-          ...(svc.requireQuantity === undefined ? {} : { requireQuantity: svc.requireQuantity }),
-          ...(svc.requireUsername === undefined ? {} : { requireUsername: svc.requireUsername }),
-          ...(svc.requireEmail === undefined ? {} : { requireEmail: svc.requireEmail }),
+          ...(hasMerchantFields ? { orderFields } : {}),
+          ...(hasMerchantFields || svc.identifierType !== undefined
+            ? { identifierType, fieldLabel: svc.fieldLabel ?? identifierField?.label ?? null }
+            : {}),
+          ...(svc.requireQuantity === undefined && !hasMerchantFields ? {} : { requireQuantity: svc.requireQuantity ?? quantityFromFields }),
+          ...(svc.requireUsername === undefined && !hasMerchantFields ? {} : { requireUsername: svc.requireUsername ?? usernameFromFields }),
+          ...(svc.requireEmail === undefined && !hasMerchantFields ? {} : { requireEmail: svc.requireEmail ?? emailFromFields }),
         },
       });
     } else {
@@ -201,10 +219,11 @@ async function syncSingleMerchant(merchant: {
         name: svc.name, category: serviceType, serviceType, price,
         description: svc.description ?? null, isActive, apiServiceId: apiId, merchantId: merchant.id,
         identifierType,
-        fieldLabel: svc.fieldLabel ?? null,
-        requireQuantity: svc.requireQuantity ?? false,
-        requireUsername: svc.requireUsername ?? false,
-        requireEmail: svc.requireEmail ?? false,
+        fieldLabel: svc.fieldLabel ?? identifierField?.label ?? null,
+        requireQuantity: svc.requireQuantity ?? quantityFromFields,
+        requireUsername: svc.requireUsername ?? usernameFromFields,
+        requireEmail: svc.requireEmail ?? emailFromFields,
+        orderFields,
       });
     }
   }

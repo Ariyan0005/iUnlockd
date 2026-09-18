@@ -1,6 +1,16 @@
-import { pgTable, serial, varchar, text, decimal, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, decimal, boolean, timestamp, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+
+export type ServiceOrderField = {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  min?: number;
+  max?: number;
+  options?: string[];
+};
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
@@ -18,6 +28,7 @@ export const services = pgTable("services", {
   requireQuantity: boolean("require_quantity").notNull().default(false),
   requireUsername: boolean("require_username").notNull().default(false),
   requireEmail: boolean("require_email").notNull().default(false),
+  orderFields: jsonb("order_fields").$type<ServiceOrderField[]>().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

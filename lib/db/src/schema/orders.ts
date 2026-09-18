@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, text, decimal, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { services } from "./services";
 
@@ -15,6 +15,7 @@ export const orders = pgTable("orders", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   result: text("result"),
   apiOrderId: varchar("api_order_id", { length: 100 }),
+  formFields: jsonb("form_fields").$type<Record<string, string>>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

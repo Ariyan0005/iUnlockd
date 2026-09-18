@@ -5,6 +5,7 @@ import { eq, desc } from "drizzle-orm";
 import { authenticate, type AuthRequest } from "../middleware/authenticate";
 import { submitMerchantOrder } from "../modules/merchant/order";
 import { resolveIdentifierType } from "../modules/services/orderConfig";
+import type { ServiceOrderField } from "@workspace/db";
 
 const router = Router();
 
@@ -34,9 +35,10 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
 
 router.post("/", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { serviceId, identifier, additionalInfo, quantity, orderUsername, orderEmail } = req.body as {
+    const { serviceId, identifier, additionalInfo, quantity, orderUsername, orderEmail, formFields } = req.body as {
       serviceId: number; identifier?: string; additionalInfo?: string;
       quantity?: number; orderUsername?: string; orderEmail?: string;
+      formFields?: Record<string, unknown>;
     };
     if (!serviceId) { res.status(400).json({ error: "Service ID is required" }); return; }
 
@@ -44,7 +46,38 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
     if (!service || !service.isActive) { res.status(404).json({ error: "Service not found or inactive" }); return; }
 
     const identType = resolveIdentifierType(service);
-    if (identType !== "none" && !identifier?.trim()) {
+    const schema = (service.orderFields ?? []) as ServiceOrderField[];
+    const submittedFields: Record<string, string> = {};
+    if (formFields && typeof formFields === "object" && !Array.isArray(formFields)) {
+      for (const [key, value] of Object.entries(formFields)) {
+        if (value !== undefined && value !== null) submittedFields[key] = String(value).trim();
+      }
+    }
+
+    for (const field of schema) {
+      const value = submittedFields[field.name] ?? "";
+      if (field.required && !value) {
+        res.status(400).json({ error: `${field.label || field.name} is required` }); return;
+      }
+      if (!value) continue;
+      if (field.min !== undefined && value.length < field.min) {
+        res.status(400).json({ error: `${field.label || field.name} must be at least ${field.min} characters` }); return;
+      }
+      if (field.max !== undefined && value.length > field.max) {
+        res.status(400).json({ error: `${field.label || field.name} must be at most ${field.max} characters` }); return;
+      }
+      if (field.type === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        res.status(400).json({ error: `Please enter a valid ${field.label || field.name}` }); return;
+      }
+      if (/^(imei)$/i.test(field.name) && !/^\d{15}$/.test(value.replace(/\s/g, ""))) {
+        res.status(400).json({ error: `${field.label || field.name} must be exactly 15 digits` }); return;
+      }
+    }
+
+    const dynamicIdentifierField = schema.find((field) => /\b(imei|serial|sn|email|username)\b/i.test(`${field.name} ${field.label}`));
+    const resolvedIdentifier = identifier?.trim() ||
+      (dynamicIdentifierField ? submittedFields[dynamicIdentifierField.name] : undefined);
+    if (identType !== "none" && !resolvedIdentifier) {
       res.status(400).json({ error: `${service.fieldLabel ?? "Identifier"} is required` }); return;
     }
     if (service.requireUsername && !orderUsername?.trim()) {
@@ -60,7 +93,11 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
     const [user] = await db.select().from(users).where(eq(users.id, req.userId!)).limit(1);
     const balance = parseFloat(user.balance ?? "0");
     const price = parseFloat(service.price);
-    const qty = service.requireQuantity ? Math.max(1, quantity ?? 1) : 1;
+    const quantityField = schema.find((field) => /^quantity$/i.test(field.name));
+    const dynamicQuantity = quantityField ? Number(submittedFields[quantityField.name]) : undefined;
+    const qty = service.requireQuantity
+      ? Math.max(1, quantity ?? dynamicQuantity ?? 1)
+      : Math.max(1, dynamicQuantity ?? 1);
     const totalPrice = price * qty;
 
     if (balance < totalPrice) { res.status(400).json({ error: "Insufficient balance. Please add funds first." }); return; }
@@ -70,11 +107,12 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
 
     const [order] = await db.insert(orders).values({
       userId: req.userId!, serviceId,
-      identifier: identifier?.trim() ?? "-",
+      identifier: resolvedIdentifier ?? "-",
       additionalInfo: additionalInfo ?? null,
       quantity: qty,
-      orderUsername: orderUsername?.trim() ?? null,
-      orderEmail: orderEmail?.trim() ?? null,
+      orderUsername: orderUsername?.trim() ?? submittedFields["username"] ?? null,
+      orderEmail: orderEmail?.trim() ?? submittedFields["email"] ?? submittedFields["Email"] ?? null,
+      formFields: Object.keys(submittedFields).length > 0 ? submittedFields : null,
       status: "pending",
       price: totalPrice.toFixed(2),
       apiOrderId: null,
@@ -84,9 +122,12 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
       try {
         const result = await submitMerchantOrder({
           apiServiceId: service.apiServiceId,
-          identifier: identifier?.trim() ?? "-",
+          identifier: resolvedIdentifier ?? "-",
           additionalInfo: additionalInfo ?? null,
           merchantId: service.merchantId ?? null,
+          quantity: qty,
+          referenceId: String(order.id),
+          fields: submittedFields,
         });
         if (!result.skipped && result.apiOrderId) {
           await db.update(orders).set({ apiOrderId: result.apiOrderId }).where(eq(orders.id, order.id));

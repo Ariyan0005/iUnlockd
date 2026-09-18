@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Wallet, AlertCircle, ArrowLeft, CheckCircle2, Minus, Plus } from "lucide-react";
@@ -13,6 +14,17 @@ interface Service {
   deliveryTime: string; processingTime: string; serviceType: string; category: string;
   identifierType?: string | null; fieldLabel?: string | null;
   requireQuantity?: boolean; requireUsername?: boolean; requireEmail?: boolean;
+  orderFields?: OrderField[];
+}
+
+interface OrderField {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  min?: number;
+  max?: number;
+  options?: string[];
 }
 
 export default function ServiceDetail() {
@@ -26,6 +38,7 @@ export default function ServiceDetail() {
   const [orderUsername, setOrderUsername] = useState("");
   const [orderEmail, setOrderEmail] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<{ orderId: number } | null>(null);
@@ -33,7 +46,11 @@ export default function ServiceDetail() {
   useEffect(() => {
     fetch(`/api/services/${id}`)
       .then((r) => r.json())
-      .then((data) => setService(data.service ?? data))
+      .then((data) => {
+        const nextService = data.service ?? data;
+        setService(nextService);
+        setFieldValues({});
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
@@ -45,7 +62,10 @@ export default function ServiceDetail() {
   const isSN = identType === "sn";
   const isEmailIdent = identType === "email";
   const hasIdentifier = identType !== "none";
+  const dynamicFields = service?.orderFields ?? [];
+  const hasDynamicFields = dynamicFields.length > 0;
   const hasOrderFields =
+    hasDynamicFields ||
     hasIdentifier ||
     !!service?.requireQuantity ||
     !!service?.requireUsername ||
@@ -71,6 +91,14 @@ export default function ServiceDetail() {
       if (service?.requireQuantity) body.quantity = quantity;
       if (service?.requireUsername) body.orderUsername = orderUsername.trim();
       if (service?.requireEmail) body.orderEmail = orderEmail.trim();
+      if (hasDynamicFields) {
+        body.formFields = {
+          ...fieldValues,
+          ...dynamicFields
+            .filter((field) => /^quantity$/i.test(field.name))
+            .reduce<Record<string, string>>((values, field) => ({ ...values, [field.name]: String(quantity) }), {}),
+        };
+      }
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -169,7 +197,7 @@ export default function ServiceDetail() {
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
                 </div>
               )}
-              {service.requireQuantity && (
+              {!hasDynamicFields && service.requireQuantity && (
                 <div className="flex flex-col gap-1.5">
                   <Label>Quantity</Label>
                   <div className="flex items-center gap-3">
@@ -182,7 +210,7 @@ export default function ServiceDetail() {
                   </div>
                 </div>
               )}
-              {hasIdentifier && (
+              {!hasDynamicFields && hasIdentifier && (
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="identifier">{fieldLabel}<span className="text-destructive ml-1">*</span></Label>
                   <Input id="identifier"
@@ -199,18 +227,73 @@ export default function ServiceDetail() {
                   {isIMEI && <p className={`text-xs ${identifier.length === 15 ? "text-green-600" : "text-muted-foreground"}`}>{identifier.length}/15 digits {identifier.length === 15 ? "✓ Valid" : ""}</p>}
                 </div>
               )}
-              {service.requireUsername && (
+              {!hasDynamicFields && service.requireUsername && (
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="orderUsername">Username<span className="text-destructive ml-1">*</span></Label>
                   <Input id="orderUsername" placeholder="Enter username" value={orderUsername} onChange={(e) => setOrderUsername(e.target.value)} required />
                 </div>
               )}
-              {service.requireEmail && (
+              {!hasDynamicFields && service.requireEmail && (
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="orderEmail">Email<span className="text-destructive ml-1">*</span></Label>
                   <Input id="orderEmail" type="email" inputMode="email" placeholder="Enter email address" value={orderEmail} onChange={(e) => setOrderEmail(e.target.value)} required />
                 </div>
               )}
+              {hasDynamicFields && dynamicFields.map((field) => {
+                if (/^quantity$/i.test(field.name)) {
+                  return (
+                    <div key={field.name} className="flex flex-col gap-1.5">
+                      <Label htmlFor={`field-${field.name}`}>{field.label}{field.required && <span className="text-destructive ml-1">*</span>}</Label>
+                      <Input
+                        id={`field-${field.name}`}
+                        type="number"
+                        min={field.min}
+                        max={field.max}
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                        required={field.required}
+                      />
+                    </div>
+                  );
+                }
+
+                const inputType = field.type === "email" ? "email" : field.type === "number" ? "number" : "text";
+                const value = fieldValues[field.name] ?? "";
+                const commonProps = {
+                  id: `field-${field.name}`,
+                  name: field.name,
+                  value,
+                  required: field.required,
+                  minLength: field.type === "number" ? undefined : field.min,
+                  maxLength: field.type === "number" ? undefined : field.max,
+                  min: field.type === "number" ? field.min : undefined,
+                  max: field.type === "number" ? field.max : undefined,
+                  inputMode: /\bimei\b/i.test(field.name) ? "numeric" as const : field.type === "email" ? "email" as const : undefined,
+                  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+                    setFieldValues((previous) => ({ ...previous, [field.name]: e.target.value })),
+                };
+
+                return (
+                  <div key={field.name} className="flex flex-col gap-1.5">
+                    <Label htmlFor={commonProps.id}>{field.label}{field.required && <span className="text-destructive ml-1">*</span>}</Label>
+                    {field.type === "textarea" ? (
+                      <Textarea {...commonProps} placeholder={`Enter ${field.label}`} />
+                    ) : field.type === "select" && field.options?.length ? (
+                      <select {...commonProps} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="">Select {field.label}</option>
+                        {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    ) : (
+                      <Input
+                        {...commonProps}
+                        type={inputType}
+                        pattern={/\bimei\b/i.test(field.name) ? "[0-9]*" : undefined}
+                        placeholder={`Enter ${field.label}`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="additionalInfo">Comments (optional)</Label>
                 <Input id="additionalInfo" placeholder="Additional notes…" value={additionalInfo} onChange={(e) => setAdditionalInfo(e.target.value)} />

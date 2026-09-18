@@ -60,21 +60,16 @@ async function checkOrderStatuses(): Promise<void> {
 }
 
 export function startMerchantCron(): void {
-  const endpoint = process.env["MERCHANT_API_ENDPOINT"];
-  if (!endpoint) {
-    logger.info("MERCHANT_API_ENDPOINT not configured — product sync cron disabled");
-  } else {
-    cron.schedule("0 */6 * * *", async () => {
-      try {
-        const result = await syncMerchantProducts();
-        if (result.skipped) logger.info("Merchant cron: skipped");
-        else logger.info({ synced: result.synced, total: result.total }, "Merchant cron: sync complete");
-      } catch (err) {
-        logger.error({ err }, "Merchant cron: sync failed");
-      }
-    });
-    logger.info("Merchant product sync cron started (every 6 hours)");
-  }
+  cron.schedule("0 */6 * * *", async () => {
+    try {
+      const result = await syncMerchantProducts();
+      if (result.skipped) logger.info("Merchant cron: skipped — no active merchant configured");
+      else logger.info({ synced: result.synced, total: result.total }, "Merchant cron: sync complete");
+    } catch (err) {
+      logger.error({ err }, "Merchant cron: sync failed");
+    }
+  });
+  logger.info("Merchant product sync cron started (every 6 hours)");
   cron.schedule("*/2 * * * *", async () => {
     try {
       await checkPendingDeposits();

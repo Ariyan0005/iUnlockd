@@ -258,6 +258,7 @@ router.get("/services", authenticate, requireAdmin, async (req: AuthRequest, res
     res.json(all.map((service) => ({
       ...service,
       identifierType: resolveIdentifierType(service),
+       orderFields: service.orderFields ?? [],
     })));
   } catch (err) {
     req.log.error({ err }, "Admin get services error");

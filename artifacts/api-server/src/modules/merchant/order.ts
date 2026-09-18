@@ -28,6 +28,9 @@ export async function submitMerchantOrder(params: {
   identifier: string;
   additionalInfo?: string | null;
   merchantId?: number | null;
+  quantity?: number;
+  referenceId?: string;
+  fields?: Record<string, string>;
 }): Promise<MerchantOrderResult> {
   let endpoint: string | undefined;
   let apiKey: string | undefined;
@@ -56,8 +59,18 @@ export async function submitMerchantOrder(params: {
   let res: Response;
 
   if (apiFormat === "dhru") {
-    // GSM Africa: POST /api/reseller/v1/orders
-    res = await fetch(`${base}/api/reseller/v1/orders`, {
+    // Dhru Reseller API: POST /api/reseller/v1/order
+    const dhruFields: Record<string, string | number> = {
+      reference_id: params.referenceId ?? `local-${Date.now()}`,
+      Quantity: params.quantity ?? 1,
+      ...(params.fields ?? {}),
+    };
+    // Keep legacy IMEI services working when no dynamic schema was returned.
+    if (params.identifier !== "-" && !Object.keys(dhruFields).some((key) => key.toLowerCase() === "imei")) {
+      dhruFields["IMEI"] = params.identifier;
+    }
+
+    res = await fetch(`${base}/api/reseller/v1/order`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -65,11 +78,10 @@ export async function submitMerchantOrder(params: {
         "Accept": "application/json",
         "User-Agent": "Mozilla/5.0",
       },
-      body: JSON.stringify({
+      body: JSON.stringify([{
         product_uuid: params.apiServiceId,
-        imei: params.identifier,
-        ...(params.additionalInfo ? { additional_info: params.additionalInfo } : {}),
-      }),
+        fields: [dhruFields],
+      }]),
     });
   } else if (apiFormat === "form") {
     const bodyParams = new URLSearchParams({
@@ -77,8 +89,9 @@ export async function submitMerchantOrder(params: {
       action: "add",
       service: params.apiServiceId,
       link: params.identifier,
-      quantity: "1",
+      quantity: String(params.quantity ?? 1),
     });
+    for (const [key, value] of Object.entries(params.fields ?? {})) bodyParams.set(key, value);
     if (apiUser && apiUser.trim()) bodyParams.set("username", apiUser.trim());
     if (params.additionalInfo) bodyParams.set("comments", params.additionalInfo);
     res = await fetch(base, {
@@ -98,7 +111,8 @@ export async function submitMerchantOrder(params: {
       body: JSON.stringify({
         service: params.apiServiceId,
         identifier: params.identifier,
-        quantity: 1,
+        quantity: params.quantity ?? 1,
+        ...(params.fields ? { fields: params.fields } : {}),
         ...(params.additionalInfo ? { comments: params.additionalInfo } : {}),
       }),
     });
@@ -110,8 +124,19 @@ export async function submitMerchantOrder(params: {
   }
 
   const data = await res.json() as Record<string, unknown>;
-  const apiOrderId = String(data["id"] ?? data["order_id"] ?? data["orderId"] ?? data["order"] ?? data["uuid"] ?? "");
-  const status = String(data["status"] ?? "pending");
+  const dataItems = Array.isArray(data["data"]) ? data["data"] as Array<Record<string, unknown>> : [];
+  const firstItem = dataItems[0] ?? (data["data"] as Record<string, unknown> | undefined);
+  const apiOrderId = String(
+    firstItem?.["order_uuid"] ??
+    firstItem?.["order_id"] ??
+    data["id"] ??
+    data["order_id"] ??
+    data["orderId"] ??
+    data["order"] ??
+    data["uuid"] ??
+    ""
+  );
+  const status = String(firstItem?.["status"] ?? data["status"] ?? "pending");
   logger.info({ apiOrderId, status }, "Merchant order forwarded");
   return { apiOrderId: apiOrderId || undefined, status, skipped: false };
 }
@@ -146,7 +171,7 @@ export async function checkMerchantOrderStatus(params: {
 
   try {
     if (apiFormat === "dhru") {
-      res = await fetch(`${base}/api/reseller/v1/orders/${params.apiOrderId}`, {
+      res = await fetch(`${base}/api/reseller/v1/order?order_uuid=${encodeURIComponent(params.apiOrderId)}`, {
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Accept": "application/json",
@@ -169,12 +194,14 @@ export async function checkMerchantOrderStatus(params: {
     if (!res.ok) return { apiOrderId: params.apiOrderId, status: "unknown", error: `API ${res.status}` };
 
     const data = await res.json() as Record<string, unknown>;
-    const status = String(data["status"] ?? data["order_status"] ?? "pending").toLowerCase();
+    const dataObj = data["data"] as Record<string, unknown> | undefined;
+    const status = String(dataObj?.["status"] ?? data["status"] ?? data["order_status"] ?? "pending").toLowerCase();
     return {
       apiOrderId: params.apiOrderId,
       status,
       startCount: Number(data["start_count"] ?? 0),
       remains: Number(data["remains"] ?? 0),
+      error: dataObj?.["replay"] ? String(dataObj["replay"]) : undefined,
     };
   } catch (err) {
     return { apiOrderId: params.apiOrderId, status: "unknown", error: String(err) };
