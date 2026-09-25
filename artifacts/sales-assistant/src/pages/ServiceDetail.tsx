@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent, type SyntheticEvent } from "reac
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useSEO } from "@/lib/seo";
+import { getServicePath } from "@/lib/serviceUrl";
 import { AlertCircle, ArrowLeft, CheckCircle2, Clock, Minus, Plus, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ interface OrderField {
 }
 
 interface Service {
-  slug?: string;
+  slug: string;
   name: string;
   description?: string | null;
   price: string;
@@ -64,10 +65,13 @@ export default function ServiceDetail() {
 
   const seoDescription = service?.description?.trim() ||
     "Place a secure device service order with clear requirements and reliable processing from iUnlockd.";
+  const canonicalServicePath = service
+    ? getServicePath(service.serviceType ?? service.category ?? "", service.slug)
+    : location.pathname;
   useSEO(
     service ? `${service.name} | iUnlockd` : "Service details | iUnlockd",
     seoDescription,
-    { canonicalUrl: slug ? location.pathname : "/services" },
+    { canonicalUrl: canonicalServicePath },
   );
 
   useEffect(() => {
@@ -81,11 +85,19 @@ export default function ServiceDetail() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error ?? "Service not found");
         const nextService = (data.service ?? data) as Service;
+        if (!nextService.slug?.trim()) throw new Error("This service does not have a public URL yet.");
         if (!cancelled) {
           setService({
             ...nextService,
             orderFields: Array.isArray(nextService.orderFields) ? nextService.orderFields : [],
           });
+          const canonicalPath = getServicePath(
+            nextService.serviceType ?? nextService.category ?? "",
+            nextService.slug,
+          );
+          if (location.pathname !== canonicalPath) {
+            navigate(canonicalPath, { replace: true });
+          }
           setFieldValues({});
           setIdentifier("");
           setQuantity(1);
@@ -103,7 +115,7 @@ export default function ServiceDetail() {
     return () => {
       cancelled = true;
     };
-  }, [slug, reloadAttempt]);
+  }, [slug, reloadAttempt, location.pathname, navigate]);
 
   const identType = service?.identifierType?.trim().toLowerCase() || "none";
   const isIMEI = identType === "imei";
@@ -147,7 +159,7 @@ export default function ServiceDetail() {
   const handleOrder = async (event?: SyntheticEvent) => {
     event?.preventDefault();
     if (!user) {
-      navigate("/login", { state: { from: `/services/${slug}` } });
+      navigate("/login", { state: { from: canonicalServicePath } });
       return;
     }
 
@@ -326,7 +338,7 @@ export default function ServiceDetail() {
             {!hasOrderFields ? (
               <>
                 {!user ? (
-                  <Button type="button" className="w-full" onClick={() => navigate("/login", { state: { from: `/services/${slug}` } })} data-testid="button-login-purchase">
+                  <Button type="button" className="w-full" onClick={() => navigate("/login", { state: { from: canonicalServicePath } })} data-testid="button-login-purchase">
                     Login to purchase
                   </Button>
                 ) : (
@@ -420,7 +432,7 @@ export default function ServiceDetail() {
                   );
                 })}
                 {!user ? (
-                  <Button type="button" onClick={() => navigate("/login", { state: { from: `/services/${slug}` } })} data-testid="button-login-order">Login to order</Button>
+                  <Button type="button" onClick={() => navigate("/login", { state: { from: canonicalServicePath } })} data-testid="button-login-order">Login to order</Button>
                 ) : (
                   <Button type="submit" disabled={submitting || !canAfford || (shouldRenderLegacyIdentifier && isIMEI && !imeiValid)} className="w-full" data-testid="button-submit-order">
                     {submitting ? "Placing order..." : `Order — $${totalPrice.toFixed(2)}`}

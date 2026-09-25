@@ -8,6 +8,7 @@ import { syncMerchantProducts, buildMerchantHeaders } from "../modules/merchant/
 import { checkMerchantOrderStatus } from "../modules/merchant/order";
 import { resolveIdentifierType } from "../modules/services/orderConfig";
 import { uniqueServiceSlug } from "../modules/services/slug";
+import { backfillMissingServiceSlugs } from "../modules/services/backfillSlugs";
 
 const router = Router();
 
@@ -255,6 +256,7 @@ router.patch("/deposits/:id", authenticate, requireAdmin, async (req: AuthReques
 
 router.get("/services", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
+    await backfillMissingServiceSlugs();
     const all = await db.select().from(services).orderBy(desc(services.createdAt));
     res.json(all.map((service) => ({
       ...service,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSEO } from "@/lib/seo";
+import { getServicePath } from "@/lib/serviceUrl";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Smartphone, Clock, ArrowRight } from "lucide-react";
 
 interface Service {
-  slug?: string;
+  slug: string;
   name: string;
   description: string;
   price: string;
@@ -16,10 +17,6 @@ interface Service {
   serviceType: string;
   category: string;
   isActive: boolean;
-}
-
-function getServiceSlug(service: Service) {
-  return service.slug?.trim() || service.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 export default function IMEIServices() {
@@ -106,7 +103,7 @@ export default function IMEIServices() {
             {filtered
               .filter((s) => s.category === cat)
               .map((service) => (
-                <ServiceCard key={getServiceSlug(service)} service={service} onSelect={() => navigate(`/imei-services/${getServiceSlug(service)}`)} />
+                <ServiceCard key={service.slug} service={service} onSelect={() => navigate(getServicePath(service.serviceType, service.slug))} />
               ))}
           </div>
         </div>
@@ -115,7 +112,7 @@ export default function IMEIServices() {
       {!loading && !error && categories.length === 0 && filtered.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((service) => (
-            <ServiceCard key={getServiceSlug(service)} service={service} onSelect={() => navigate(`/imei-services/${getServiceSlug(service)}`)} />
+            <ServiceCard key={service.slug} service={service} onSelect={() => navigate(getServicePath(service.serviceType, service.slug))} />
           ))}
         </div>
       )}

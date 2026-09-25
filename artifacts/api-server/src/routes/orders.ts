@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { orders, services, users } from "@workspace/db";
-import { eq, desc, or } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { authenticate, type AuthRequest } from "../middleware/authenticate";
 import { submitMerchantOrder } from "../modules/merchant/order";
 import { resolveIdentifierType } from "../modules/services/orderConfig";
@@ -47,13 +47,15 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
 
     const normalizedSlug = serviceSlug?.trim().toLowerCase();
     const legacyServiceId = normalizedSlug ? /^service-(\d+)$/.exec(normalizedSlug)?.[1] : undefined;
-    const [service] = normalizedSlug
-      ? await db.select().from(services).where(
-          legacyServiceId
-            ? or(eq(services.slug, normalizedSlug), eq(services.id, Number(legacyServiceId)))
-            : eq(services.slug, normalizedSlug),
-        ).limit(1)
-      : await db.select().from(services).where(eq(services.id, serviceId!)).limit(1);
+    let service = normalizedSlug
+      ? (await db.select().from(services).where(eq(services.slug, normalizedSlug)).limit(1))[0]
+      : undefined;
+    if (!service && legacyServiceId) {
+      service = (await db.select().from(services).where(eq(services.id, Number(legacyServiceId))).limit(1))[0];
+    }
+    if (!service && !normalizedSlug && serviceId) {
+      service = (await db.select().from(services).where(eq(services.id, serviceId)).limit(1))[0];
+    }
     if (!service || !service.isActive) { res.status(404).json({ error: "Service not found or inactive" }); return; }
 
     const identType = resolveIdentifierType(service);

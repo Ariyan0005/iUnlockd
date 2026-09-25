@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSEO } from "@/lib/seo";
+import { getServicePath } from "@/lib/serviceUrl";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Server, Clock, ArrowRight } from "lucide-react";
 
 interface Service {
-  slug?: string;
+  slug: string;
   name: string;
   description: string;
   price: string;
@@ -15,10 +16,6 @@ interface Service {
   serviceType: string;
   category: string;
   isActive: boolean;
-}
-
-function getServiceSlug(service: Service) {
-  return service.slug?.trim() || service.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 export default function ServerServices() {
@@ -106,9 +103,9 @@ export default function ServerServices() {
               .filter((s) => s.category === cat)
               .map((service) => (
                 <ServiceCard
-                  key={getServiceSlug(service)}
+                  key={service.slug}
                   service={service}
-                  onSelect={() => navigate(`/services/${getServiceSlug(service)}`)}
+                  onSelect={() => navigate(getServicePath(service.serviceType, service.slug))}
                 />
               ))}
           </div>
@@ -119,9 +116,9 @@ export default function ServerServices() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((service) => (
             <ServiceCard
-              key={getServiceSlug(service)}
+              key={service.slug}
               service={service}
-              onSelect={() => navigate(`/services/${getServiceSlug(service)}`)}
+              onSelect={() => navigate(getServicePath(service.serviceType, service.slug))}
             />
           ))}
         </div>
