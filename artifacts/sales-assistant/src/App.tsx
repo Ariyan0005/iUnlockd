@@ -62,9 +62,10 @@ function ProtectedRoute({ children, adminOnly = false }: { children: ReactNode; 
   // If no token at all — redirect immediately, no spinner needed
   if (!hasToken && !user) return <Navigate to="/login" replace />;
 
-  // Token exists but auth is still verifying — show content optimistically
-  // (API calls will fail with 401 if token is bad, handled per-page)
-  if (isLoading) return <>{children}</>;
+  // Wait for the session to be verified before mounting protected pages.
+  // This prevents pages such as Admin from starting their first data fetch
+  // during the auth transition after navigation from the public site.
+  if (isLoading) return <PageLoader />;
 
   if (!user) return <Navigate to="/login" replace />;
   if (adminOnly && user.role !== "admin") return <Navigate to="/dashboard" replace />;

@@ -252,7 +252,7 @@ function Sidebar({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Admin() {
-  const { user, token } = useAuth();
+  const { user, token, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
@@ -320,7 +320,10 @@ export default function Admin() {
     [filteredSvcs, svcGroupBy]);
   const [depositSearch, setDepositSearch] = useState("");
 
-  const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem("iu_token")}` });
+  const authHeader = (): Record<string, string> => {
+    const authToken = token ?? localStorage.getItem("iu_token");
+    return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+  };
 
   const apiFetch = (url: string, options: RequestInit = {}) => {
     const ctrl = new AbortController();
@@ -367,10 +370,11 @@ export default function Admin() {
   };
 
   useEffect(() => {
+    if (authLoading) return;
     const storedToken = token ?? localStorage.getItem("iu_token");
     if (!storedToken || user?.role !== "admin") return;
     void loadAll();
-  }, [token, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [authLoading, token, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleCrypto = async () => {
     setTogglingCrypto(true);
