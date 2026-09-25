@@ -7,7 +7,7 @@ import { authenticate, requireAdmin, type AuthRequest } from "../middleware/auth
 import { syncMerchantProducts, buildMerchantHeaders } from "../modules/merchant/sync";
 import { checkMerchantOrderStatus } from "../modules/merchant/order";
 import { resolveIdentifierType } from "../modules/services/orderConfig";
-import { uniqueServiceSlug } from "../modules/services/slug";
+import { slugifyServiceName, uniqueServiceSlug } from "../modules/services/slug";
 import { backfillMissingServiceSlugs } from "../modules/services/backfillSlugs";
 
 const router = Router();
@@ -272,10 +272,10 @@ router.get("/services", authenticate, requireAdmin, async (req: AuthRequest, res
 router.post("/services", authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
     const {
-      name, category, price, description, deliveryTime, serviceType, merchantId,
+      name, slug, category, price, description, deliveryTime, serviceType, merchantId,
       identifierType, fieldLabel, requireQuantity, requireUsername, requireEmail,
     } = req.body as {
-      name: string; category: string; price: string;
+      name: string; slug?: string; category: string; price: string;
       description?: string; deliveryTime?: string; serviceType?: string; merchantId?: number;
       identifierType?: string; fieldLabel?: string;
       requireQuantity?: boolean; requireUsername?: boolean; requireEmail?: boolean;
@@ -286,12 +286,19 @@ router.post("/services", authenticate, requireAdmin, async (req: AuthRequest, re
     }
     const usedSlugs = new Set(
       (await db.select({ slug: services.slug }).from(services))
-        .map((row) => row.slug)
+        .map((row) => row.slug?.trim().toLowerCase())
         .filter((slug): slug is string => Boolean(slug)),
     );
+    const requestedSlug = slug?.trim()
+      ? slugifyServiceName(slug, `service-${Date.now()}`)
+      : uniqueServiceSlug(name, `service-${Date.now()}`, usedSlugs);
+    if (usedSlugs.has(requestedSlug)) {
+      res.status(409).json({ error: "This slug is already in use. Please choose another one." });
+      return;
+    }
     const [service] = await db.insert(services).values({
       name, category,
-      slug: uniqueServiceSlug(name, `service-${Date.now()}`, usedSlugs),
+      slug: requestedSlug,
       serviceType: serviceType ?? category,
       price, description: description ?? null,
       deliveryTime: deliveryTime ?? null,
@@ -313,10 +320,10 @@ router.patch("/services/:id", authenticate, requireAdmin, async (req: AuthReques
   try {
     const id = Number(req.params["id"]);
     const {
-      name, category, price, description, deliveryTime, isActive, serviceType, merchantId,
+      name, slug, category, price, description, deliveryTime, isActive, serviceType, merchantId,
       identifierType, fieldLabel, requireQuantity, requireUsername, requireEmail,
     } = req.body as {
-      name?: string; category?: string; price?: string; description?: string;
+      name?: string; slug?: string; category?: string; price?: string; description?: string;
       deliveryTime?: string; isActive?: boolean; serviceType?: string; merchantId?: number | null;
       identifierType?: string; fieldLabel?: string | null;
       requireQuantity?: boolean; requireUsername?: boolean; requireEmail?: boolean;
@@ -330,16 +337,33 @@ router.patch("/services/:id", authenticate, requireAdmin, async (req: AuthReques
     if (deliveryTime !== undefined) update["deliveryTime"] = deliveryTime;
     if (isActive !== undefined) update["isActive"] = isActive;
     if (merchantId !== undefined) update["merchantId"] = merchantId;
-    if (name !== undefined) {
-      const [current] = await db.select({ slug: services.slug }).from(services).where(eq(services.id, id)).limit(1);
-      if (current && !current.slug) {
-        const usedSlugs = new Set(
-          (await db.select({ slug: services.slug }).from(services))
-            .map((row) => row.slug)
-            .filter((slug): slug is string => Boolean(slug)),
-        );
-        update["slug"] = uniqueServiceSlug(name, `service-${id}`, usedSlugs);
+    if (name !== undefined || slug !== undefined) {
+      const [current] = await db
+        .select({ name: services.name, slug: services.slug })
+        .from(services)
+        .where(eq(services.id, id))
+        .limit(1);
+      if (!current) {
+        res.status(404).json({ error: "Service not found" });
+        return;
       }
+
+      const usedSlugs = new Set(
+        (await db.select({ id: services.id, slug: services.slug }).from(services))
+          .filter((row) => row.id !== id)
+          .map((row) => row.slug?.trim().toLowerCase())
+          .filter((value): value is string => Boolean(value)),
+      );
+      const requestedSlug = slug?.trim()
+        ? slugifyServiceName(slug, `service-${id}`)
+        : slug === undefined && current.slug?.trim()
+          ? current.slug.trim().toLowerCase()
+          : uniqueServiceSlug(name ?? current.name, `service-${id}`, usedSlugs);
+      if (usedSlugs.has(requestedSlug)) {
+        res.status(409).json({ error: "This slug is already in use. Please choose another one." });
+        return;
+      }
+      update["slug"] = requestedSlug;
     }
     if (identifierType !== undefined) update["identifierType"] = identifierType;
     if (fieldLabel !== undefined) update["fieldLabel"] = fieldLabel;

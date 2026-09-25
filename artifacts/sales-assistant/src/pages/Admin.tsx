@@ -38,7 +38,7 @@ interface Stats {
   pendingDeposits: number; todayOrders: number; completedOrders: number;
 }
 interface Service {
-  id: number; name: string; category: string; price: string;
+  id: number; name: string; slug?: string | null; category: string; price: string;
   description?: string; deliveryTime?: string; isActive: boolean;
   apiServiceId?: string; merchantId?: number | null;
   identifierType?: string; fieldLabel?: string | null;
@@ -49,7 +49,7 @@ interface Merchant {
   apiFormat?: string | null; description?: string | null; isActive: boolean; createdAt: string; updatedAt: string;
 }
 
-const EMPTY_SERVICE = { name: "", category: "imei", price: "", description: "", deliveryTime: "", identifierType: "imei", fieldLabel: "", requireQuantity: false, requireUsername: false, requireEmail: false };
+const EMPTY_SERVICE = { name: "", slug: "", category: "imei", price: "", description: "", deliveryTime: "", identifierType: "imei", fieldLabel: "", requireQuantity: false, requireUsername: false, requireEmail: false };
 const EMPTY_MERCHANT = { name: "", apiEndpoint: "", apiKey: "", apiUser: "", apiFormat: "rest", description: "" };
 
 // ─── Sidebar Shell ────────────────────────────────────────────────────────────
@@ -524,7 +524,7 @@ export default function Admin() {
   const openEditService = (svc: Service) => {
     setEditingService(svc);
     const noIdentifierCategory = ["tool", "game", "gift_card", "other"].includes(svc.category);
-    setServiceForm({ name: svc.name, category: svc.category, price: svc.price, description: svc.description || "", deliveryTime: svc.deliveryTime || "", identifierType: svc.identifierType ?? (noIdentifierCategory ? "none" : "imei"), fieldLabel: svc.fieldLabel ?? "", requireQuantity: svc.requireQuantity ?? false, requireUsername: svc.requireUsername ?? false, requireEmail: svc.requireEmail ?? false });
+    setServiceForm({ name: svc.name, slug: svc.slug ?? "", category: svc.category, price: svc.price, description: svc.description || "", deliveryTime: svc.deliveryTime || "", identifierType: svc.identifierType ?? (noIdentifierCategory ? "none" : "imei"), fieldLabel: svc.fieldLabel ?? "", requireQuantity: svc.requireQuantity ?? false, requireUsername: svc.requireUsername ?? false, requireEmail: svc.requireEmail ?? false });
     setShowServiceModal(true);
   };
 
@@ -880,6 +880,7 @@ export default function Admin() {
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm leading-tight truncate">{svc.name}</p>
+                              {svc.slug && <p className="text-xs text-muted-foreground mt-0.5 truncate">/{svc.slug}</p>}
                               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                                 {svc.category && <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium capitalize">{svc.category}</span>}
                                 {merchant && <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full font-medium">{merchant.name}</span>}
@@ -1225,6 +1226,17 @@ export default function Admin() {
               <div className="flex flex-col gap-1.5">
                 <Label>Service Name *</Label>
                 <Input placeholder="e.g. iPhone Unlock — T-Mobile USA" value={serviceForm.name} onChange={(e) => setServiceForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>URL Slug (SEO)</Label>
+                <Input
+                  placeholder="e.g. iphone-15-tmobile-unlock"
+                  value={serviceForm.slug}
+                  onChange={(e) => setServiceForm(f => ({ ...f, slug: e.target.value }))}
+                  pattern="[A-Za-z0-9-]+"
+                  title="Use letters, numbers, and hyphens"
+                />
+                <p className="text-xs text-muted-foreground">Use lowercase words separated by hyphens. Leave blank to generate it from the service name.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
