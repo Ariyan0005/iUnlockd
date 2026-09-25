@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { services, merchants } from "@workspace/db";
-import { eq, and, or, isNull, asc } from "drizzle-orm";
+import { eq, and, or, isNull, asc, inArray } from "drizzle-orm";
 import { resolveIdentifierType } from "../modules/services/orderConfig";
 import { slugifyServiceName } from "../modules/services/slug";
 import { backfillMissingServiceSlugs } from "../modules/services/backfillSlugs";
@@ -47,7 +47,12 @@ function publicService(service: {
 router.get("/", async (req, res) => {
   try {
     await backfillMissingServiceSlugs();
-    const type = req.query["type"] as string | undefined;
+    const requestedType = String(req.query["type"] ?? "").trim().toLowerCase();
+    const serviceTypeFilter = requestedType === "tool_rent"
+      ? ["tool", "tool_rent"]
+      : requestedType
+        ? [requestedType]
+        : null;
 
     // Only show services where: service is active AND (no merchant OR merchant is active)
     const rows = await db
@@ -71,10 +76,10 @@ router.get("/", async (req, res) => {
       .from(services)
       .leftJoin(merchants, eq(services.merchantId, merchants.id))
       .where(
-        type
+        serviceTypeFilter
           ? and(
               eq(services.isActive, true),
-              eq(services.serviceType, type),
+              inArray(services.serviceType, serviceTypeFilter),
               or(isNull(services.merchantId), eq(merchants.isActive, true))
             )
           : and(

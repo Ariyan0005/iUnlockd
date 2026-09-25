@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 
 const SERVICE_NAV = [
+  { label: "All Services", href: "/services", icon: ShoppingBag },
   { label: "IMEI Service", href: "/imei-services", icon: Smartphone },
   { label: "Server Service", href: "/server-services", icon: Server },
   { label: "Remote / Rent Service", href: "/tool-rent", icon: Wrench },
@@ -52,6 +53,7 @@ const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search }
 
 const NAV_USER_DESKTOP = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "All Services", href: "/services", icon: ShoppingBag },
   { label: "IMEI Services", href: "/imei-services", icon: Smartphone },
   { label: "Server Services", href: "/server-services", icon: Server },
   { label: "Orders", href: "/orders", icon: ShoppingBag },
@@ -248,6 +250,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </div>
 
                       <NavItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" active={isActive("/dashboard")} onClick={close} />
+                      <NavItem icon={ShoppingBag} label="All Services" href="/services" active={isActive("/services")} onClick={close} />
                       <NavItem icon={Smartphone} label="IMEI Service" href="/imei-services" active={isActive("/imei-services")} onClick={close} />
                       <NavItem icon={Server} label="Server Service" href="/server-services" active={isActive("/server-services")} onClick={close} />
                       <NavItem icon={Wrench} label="Remote / Rent Service" href="/tool-rent" active={isActive("/tool-rent")} onClick={close} />
