@@ -1,0 +1,2 @@
+- [Provider field schemas](provider-field-schemas.md) — Treat merchant-provided order fields as authoritative and preserve exact provider keys outbound.
+- [Public service identifiers](public-service-identifiers.md) — Expose stable SEO slugs publicly and resolve provider IDs only on the server.
