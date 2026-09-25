@@ -1,11 +1,10 @@
 import { db } from "@workspace/db";
-import { services, merchants } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { services, merchants, orders } from "@workspace/db";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { logger } from "../../lib/logger";
 import { resolveIdentifierType } from "../services/orderConfig";
 import { fieldNameMatches, normalizeMerchantFields } from "./fieldSchema";
 import { uniqueServiceSlug } from "../services/slug";
-import type { ServiceOrderField } from "@workspace/db";
 
 interface MerchantService {
   id?: string | number;
@@ -32,6 +31,34 @@ interface MerchantService {
   requirements?: unknown;
   inputs?: unknown;
   parameters?: unknown;
+}
+
+type ExistingService = {
+  id: number;
+  apiServiceId: string | null;
+  slug: string | null;
+};
+
+function merchantServiceId(service: MerchantService): string {
+  return String(service.id ?? service.service_id ?? "").trim();
+}
+
+/**
+ * Provider APIs occasionally return the same product more than once. The
+ * provider ID is the stable identity, so keep one copy before touching the
+ * database. The last copy wins because it is usually the most complete item
+ * in inconsistent provider responses.
+ */
+export function deduplicateMerchantServices(list: MerchantService[]): MerchantService[] {
+  const unique = new Map<string, MerchantService>();
+
+  for (const service of list) {
+    const apiId = merchantServiceId(service);
+    if (!apiId || !service.name?.trim()) continue;
+    unique.set(apiId, service);
+  }
+
+  return Array.from(unique.values());
 }
 
 const DELIVERY_TIME_KEYS = [
@@ -216,7 +243,9 @@ async function syncSingleMerchant(merchant: {
   apiFormat: string;
 }): Promise<{ synced: number; total: number }> {
   const base = merchant.apiEndpoint.replace(/\/$/, "");
-  const list = await fetchMerchantServiceList(base, merchant.apiKey, merchant.apiUser, merchant.apiFormat ?? "rest");
+  const list = deduplicateMerchantServices(
+    await fetchMerchantServiceList(base, merchant.apiKey, merchant.apiUser, merchant.apiFormat ?? "rest"),
+  );
 
   // Get existing services for this merchant to do upsert efficiently
   const existing = await db.select({
@@ -225,18 +254,29 @@ async function syncSingleMerchant(merchant: {
     slug: services.slug,
   })
     .from(services)
-    .where(eq(services.merchantId, merchant.id));
+    .where(eq(services.merchantId, merchant.id))
+    .orderBy(asc(services.id));
   const allSlugs = await db.select({ slug: services.slug }).from(services);
   const reservedSlugs = new Set(allSlugs.map((row) => row.slug).filter((slug): slug is string => Boolean(slug)));
 
-  const existingMap = new Map(existing.map((service) => [service.apiServiceId, service]));
+  const existingMap = new Map<string, ExistingService>();
+  const duplicateRows: ExistingService[] = [];
+  for (const service of existing) {
+    if (!service.apiServiceId) continue;
+    if (existingMap.has(service.apiServiceId)) {
+      duplicateRows.push(service);
+    } else {
+      existingMap.set(service.apiServiceId, service);
+    }
+  }
 
   const toInsert: typeof services.$inferInsert[] = [];
-  const toUpdate: Array<{ apiId: string; data: Partial<typeof services.$inferInsert> }> = [];
+  const toUpdate: Array<{ id: number; data: Partial<typeof services.$inferInsert> }> = [];
+  const incomingIds = new Set<string>();
 
   for (const svc of list) {
-    const apiId = String(svc.id ?? svc.service_id ?? "").trim();
-    if (!apiId || !svc.name) continue;
+    const apiId = merchantServiceId(svc);
+    incomingIds.add(apiId);
 
     const priceRaw = parseFloat(String(svc.price ?? svc.cost ?? svc.rate ?? "0"));
     const price = isNaN(priceRaw) ? "0.00" : priceRaw.toFixed(2);
@@ -265,7 +305,7 @@ async function syncSingleMerchant(merchant: {
 
     if (existingService) {
       toUpdate.push({
-        apiId,
+        id: existingService.id,
         data: {
           name: svc.name,
           ...(existingService.slug ? {} : { slug }),
@@ -301,6 +341,38 @@ async function syncSingleMerchant(merchant: {
     }
   }
 
+  // Remove products that disappeared upstream and duplicate rows created by
+  // earlier syncs. Keep rows referenced by orders for audit history, but
+  // deactivate them so they cannot appear in the marketplace.
+  const rowsToReconcile = list.length > 0
+    ? [
+        ...duplicateRows,
+        ...existing.filter((service) =>
+          Boolean(service.apiServiceId) && !incomingIds.has(service.apiServiceId as string),
+        ),
+      ]
+    : [];
+  const reconcileIds = Array.from(new Set(rowsToReconcile.map((row) => row.id)));
+  if (reconcileIds.length > 0) {
+    const referenced = await db
+      .select({ serviceId: orders.serviceId })
+      .from(orders)
+      .where(inArray(orders.serviceId, reconcileIds));
+    const referencedIds = new Set(referenced.map((row) => row.serviceId));
+    const removableIds = reconcileIds.filter((id) => !referencedIds.has(id));
+    const protectedIds = reconcileIds.filter((id) => referencedIds.has(id));
+
+    if (removableIds.length > 0) {
+      await db.delete(services).where(inArray(services.id, removableIds));
+    }
+    if (protectedIds.length > 0) {
+      await db
+        .update(services)
+        .set({ isActive: false })
+        .where(inArray(services.id, protectedIds));
+    }
+  }
+
   // Batch insert new services (chunks of 100)
   const CHUNK = 100;
   for (let i = 0; i < toInsert.length; i += CHUNK) {
@@ -311,16 +383,47 @@ async function syncSingleMerchant(merchant: {
   const CONCURRENT = 50;
   for (let i = 0; i < toUpdate.length; i += CONCURRENT) {
     await Promise.all(
-      toUpdate.slice(i, i + CONCURRENT).map(({ apiId, data }) =>
-        db.update(services).set(data).where(eq(services.apiServiceId, apiId))
+      toUpdate.slice(i, i + CONCURRENT).map(({ id, data }) =>
+        db.update(services).set(data).where(
+          and(eq(services.id, id), eq(services.merchantId, merchant.id)),
+        )
       )
     );
   }
 
-  return { synced: toInsert.length + toUpdate.length, total: list.length };
+  return { synced: list.length, total: list.length };
 }
 
 export async function syncMerchantProducts(merchantId?: number): Promise<{
+  synced: number;
+  total: number;
+  skipped?: boolean;
+  error?: string;
+  details?: Array<{ merchant: string; synced: number; total: number; error?: string }>;
+}> {
+  return syncMerchantProductsLocked(merchantId);
+}
+
+let syncInFlight: Promise<Awaited<ReturnType<typeof syncMerchantProductsUnlocked>>> | null = null;
+
+async function syncMerchantProductsLocked(merchantId?: number): Promise<{
+  synced: number;
+  total: number;
+  skipped?: boolean;
+  error?: string;
+  details?: Array<{ merchant: string; synced: number; total: number; error?: string }>;
+}> {
+  if (syncInFlight) return syncInFlight;
+
+  syncInFlight = syncMerchantProductsUnlocked(merchantId);
+  try {
+    return await syncInFlight;
+  } finally {
+    syncInFlight = null;
+  }
+}
+
+async function syncMerchantProductsUnlocked(merchantId?: number): Promise<{
   synced: number;
   total: number;
   skipped?: boolean;
