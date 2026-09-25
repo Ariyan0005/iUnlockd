@@ -6,3 +6,4 @@
 - [Provider diagnostics](provider-diagnostics.md) — treat HTTP success with HTML, invalid JSON, or Cloudflare challenge as provider failures and redact request credentials before display.
 - [Artifact preview paths](artifact-preview-paths.md) — imported artifacts can collide on `/`; keep one primary app at root and move secondary apps to a unique preview path.
 - [GitHub push authentication](github-push-authentication.md) — public fetches can work while pushes still require a valid PAT in a workspace secret.
+- [Preview database bootstrap](preview-database-bootstrap.md) — a fresh imported workspace may need its development schema applied before API preview checks can run.
