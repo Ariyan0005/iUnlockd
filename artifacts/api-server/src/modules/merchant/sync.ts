@@ -34,6 +34,31 @@ interface MerchantService {
   parameters?: unknown;
 }
 
+const DELIVERY_TIME_KEYS = [
+  "deliveryTime",
+  "delivery_time",
+  "processingTime",
+  "processing_time",
+  "turnaroundTime",
+  "turnaround_time",
+  "time",
+  "duration",
+  "eta",
+] as const;
+
+function extractDeliveryTime(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+
+  for (const key of DELIVERY_TIME_KEYS) {
+    const candidate = record[key];
+    if (typeof candidate === "string" && candidate.trim()) return candidate.trim();
+    if (typeof candidate === "number" && Number.isFinite(candidate)) return String(candidate);
+  }
+
+  return null;
+}
+
 function merchantFieldSource(service: MerchantService): unknown {
   return service.fields ??
     service.order_fields ??
@@ -165,6 +190,7 @@ export async function fetchMerchantServiceList(
       price: String(p["price"] ?? p["cost"] ?? "0"),
       description: p["description"] ? String(p["description"]) : undefined,
       type: p["type"] ? String(p["type"]) : undefined,
+      deliveryTime: extractDeliveryTime(p),
         fields: p["fields"] ??
           p["order_fields"] ??
           p["orderFields"] ??
@@ -220,6 +246,7 @@ async function syncSingleMerchant(merchant: {
       svc.status !== "disabled" &&
       svc.status !== "0";
     const serviceType = detectServiceType(svc);
+    const deliveryTime = extractDeliveryTime(svc);
     const identifierType = detectIdentifierType(svc, serviceType);
     const rawFields = merchantFieldSource(svc);
     const orderFields = normalizeMerchantFields(rawFields);
@@ -244,6 +271,7 @@ async function syncSingleMerchant(merchant: {
           ...(existingService.slug ? {} : { slug }),
           price,
           description: svc.description ?? null,
+          deliveryTime,
           isActive,
           serviceType,
           category: serviceType,
@@ -261,6 +289,7 @@ async function syncSingleMerchant(merchant: {
       toInsert.push({
         name: svc.name, category: serviceType, serviceType, price,
         description: svc.description ?? null, isActive, apiServiceId: apiId, merchantId: merchant.id,
+        deliveryTime,
         slug,
         identifierType,
         fieldLabel: svc.fieldLabel ?? identifierField?.label ?? null,
