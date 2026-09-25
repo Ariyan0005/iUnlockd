@@ -4,7 +4,7 @@ import { db } from "@workspace/db";
 import { users, orders, services, cryptoDeposits, settings, merchants } from "@workspace/db";
 import { eq, desc, sql, count, notInArray } from "drizzle-orm";
 import { authenticate, requireAdmin, type AuthRequest } from "../middleware/authenticate";
-import { syncMerchantProducts, buildMerchantHeaders } from "../modules/merchant/sync";
+import { syncMerchantProducts, buildMerchantHeaders, normalizeMerchantServiceList } from "../modules/merchant/sync";
 import { checkMerchantOrderStatus } from "../modules/merchant/order";
 import { resolveIdentifierType } from "../modules/services/orderConfig";
 import { slugifyServiceName, uniqueServiceSlug } from "../modules/services/slug";
@@ -600,16 +600,7 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
       if (testRes.ok) {
         try {
           const parsed = JSON.parse(responseBody) as unknown;
-          const p = parsed as Record<string, unknown>;
-          // GSM Africa: {data: {products: {uuid: {...}}}}
-          const dataObj = p["data"] as Record<string, unknown> | undefined;
-          if (dataObj && dataObj["products"] && typeof dataObj["products"] === "object" && !Array.isArray(dataObj["products"])) {
-            serviceCount = Object.keys(dataObj["products"] as object).length;
-          } else {
-            const list = Array.isArray(parsed) ? parsed
-              : (p["services"] ?? p["products"] ?? p["data"] ?? []);
-            serviceCount = Array.isArray(list) ? list.length : 0;
-          }
+          serviceCount = normalizeMerchantServiceList(parsed).length;
           ok = true;
         } catch {
           if (responseBody.includes('<html') || responseBody.includes('cloudflare') || responseBody.includes('gorizontal')) {

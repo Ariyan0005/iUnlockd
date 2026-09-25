@@ -9,6 +9,10 @@ import { uniqueServiceSlug } from "../services/slug";
 interface MerchantService {
   id?: string | number;
   service_id?: string | number;
+  service?: string | number;
+  uuid?: string | number;
+  product_uuid?: string | number;
+  productId?: string | number;
   name: string;
   price?: string | number;
   cost?: string | number;
@@ -42,11 +46,16 @@ interface MerchantService {
   orderForm?: unknown;
   order_fields?: unknown;
   orderFields?: unknown;
+  order_box_fields?: unknown;
+  orderBoxFields?: unknown;
   required_fields?: unknown;
   requiredFields?: unknown;
   requirements?: unknown;
   inputs?: unknown;
   parameters?: unknown;
+  schema?: unknown;
+  field_schema?: unknown;
+  fieldSchema?: unknown;
 }
 
 type ExistingService = {
@@ -56,7 +65,15 @@ type ExistingService = {
 };
 
 function merchantServiceId(service: MerchantService): string {
-  return String(service.id ?? service.service_id ?? "").trim();
+  return String(
+    service.id ??
+    service.service_id ??
+    service.service ??
+    service.uuid ??
+    service.product_uuid ??
+    service.productId ??
+    "",
+  ).trim();
 }
 
 /**
@@ -115,11 +132,16 @@ const MERCHANT_FIELD_KEYS = [
   "formFields",
   "order_fields",
   "orderFields",
+  "order_box_fields",
+  "orderBoxFields",
   "required_fields",
   "requiredFields",
   "requirements",
   "inputs",
   "parameters",
+  "schema",
+  "field_schema",
+  "fieldSchema",
 ] as const;
 
 function firstNonNullish(record: Record<string, unknown>, keys: readonly string[]): unknown {
@@ -159,6 +181,65 @@ export function extractMerchantDescription(service: MerchantService): string | n
     "instructions",
     "note",
   ]));
+}
+
+function normalizeMerchantService(value: unknown, fallbackId?: string): MerchantService | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const record = value as Record<string, unknown>;
+  const id = firstNonNullish(record, [
+    "id",
+    "service_id",
+    "service",
+    "uuid",
+    "product_uuid",
+    "productId",
+  ]) ?? fallbackId;
+  const name = textValue(firstNonNullish(record, [
+    "name",
+    "service_name",
+    "product_name",
+    "title",
+  ]));
+  if (id === undefined || id === null || !name) return null;
+
+  return {
+    ...record,
+    id: String(id),
+    name,
+  } as MerchantService;
+}
+
+/**
+ * Provider response envelopes vary between arrays, keyed maps, and nested
+ * data.services/data.products objects. Normalize all of them before the sync
+ * pipeline so adding a merchant does not require another UI-specific adapter.
+ */
+export function normalizeMerchantServiceList(raw: unknown): MerchantService[] {
+  if (Array.isArray(raw)) {
+    return raw.flatMap((item) => {
+      const service = normalizeMerchantService(item);
+      return service ? [service] : [];
+    });
+  }
+  if (!raw || typeof raw !== "object") return [];
+
+  const record = raw as Record<string, unknown>;
+  const directService = normalizeMerchantService(record);
+  if (directService) return [directService];
+
+  for (const key of ["services", "products", "data"]) {
+    const nested = record[key];
+    if (nested !== undefined && nested !== null && nested !== raw) {
+      const services = normalizeMerchantServiceList(nested);
+      if (services.length > 0) return services;
+    }
+  }
+
+  return Object.entries(record).flatMap(([fallbackId, value]) => {
+    const service = normalizeMerchantService(value, fallbackId);
+    return service ? [service] : [];
+  });
 }
 
 function detectServiceType(svc: MerchantService): string {
@@ -267,44 +348,8 @@ export async function fetchMerchantServiceList(
   }
 
   const raw = await res.json() as unknown;
-  if (Array.isArray(raw)) return raw as MerchantService[];
+  return normalizeMerchantServiceList(raw);
 
-  const obj = raw as Record<string, unknown>;
-
-  // GSM Africa / Dhru Fusion: {status, data: {products: {uuid: {name,price,...}}}}
-  const dataObj = obj["data"] as Record<string, unknown> | undefined;
-  if (dataObj && dataObj["products"] && typeof dataObj["products"] === "object" && !Array.isArray(dataObj["products"])) {
-    const productsMap = dataObj["products"] as Record<string, Record<string, unknown>>;
-    return Object.entries(productsMap).map(([uuid, p]) => ({
-      id: uuid,
-      name: String(p["name"] ?? ""),
-      price: String(p["price"] ?? p["cost"] ?? "0"),
-      description: p["description"],
-      type: p["type"] ? String(p["type"]) : undefined,
-      deliveryTime: extractDeliveryTime(p),
-        fields: p["fields"] ??
-          p["order_box"] ??
-          p["orderBox"] ??
-          p["orderbox"] ??
-          p["order_form"] ??
-          p["orderForm"] ??
-          p["input_fields"] ??
-          p["inputFields"] ??
-          p["form_fields"] ??
-          p["formFields"] ??
-          p["order_fields"] ??
-          p["orderFields"] ??
-          p["required_fields"] ??
-          p["requiredFields"] ??
-          p["requirements"] ??
-          p["inputs"] ??
-          p["parameters"],
-      active: true,
-    }));
-  }
-
-  const list = obj["services"] ?? obj["products"] ?? obj["data"] ?? [];
-  return Array.isArray(list) ? (list as MerchantService[]) : [];
 }
 
 async function syncSingleMerchant(merchant: {
@@ -389,14 +434,15 @@ async function syncSingleMerchant(merchant: {
           serviceType,
           category: serviceType,
           merchantId: merchant.id,
-          ...(hasMerchantFields ? { orderFields } : {}),
+          // Clear stale provider fields when the next response omits them.
+          // Merchant rows are provider-owned, so an old order box must not
+          // survive a later product-schema change.
+          orderFields,
           // Merchant products are provider-owned. Recompute the identifier on
           // every sync so an old default IMEI does not survive a provider
           // update that describes a different order flow.
           identifierType,
-          ...(hasMerchantFields || svc.identifierType !== undefined
-            ? { fieldLabel: svc.fieldLabel ?? identifierField?.label ?? null }
-            : {}),
+          fieldLabel: svc.fieldLabel ?? identifierField?.label ?? null,
           ...(svc.requireQuantity === undefined && !hasMerchantFields ? { requireQuantity: false } : { requireQuantity: svc.requireQuantity ?? quantityFromFields }),
           ...(svc.requireUsername === undefined && !hasMerchantFields ? { requireUsername: false } : { requireUsername: svc.requireUsername ?? usernameFromFields }),
           ...(svc.requireEmail === undefined && !hasMerchantFields ? { requireEmail: false } : { requireEmail: svc.requireEmail ?? emailFromFields }),

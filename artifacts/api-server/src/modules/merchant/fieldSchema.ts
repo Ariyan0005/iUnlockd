@@ -40,17 +40,29 @@ function unwrapFieldContainer(raw: unknown): unknown {
 
   const record = raw as Record<string, unknown>;
   for (const key of [
+    "order_box",
+    "orderBox",
+    "orderbox",
+    "order_form",
+    "orderForm",
     "fields",
     "order_fields",
     "orderFields",
     "required_fields",
     "requiredFields",
+    "order_box_fields",
+    "orderBoxFields",
     "inputs",
     "parameters",
     "items",
+    "schema",
+    "field_schema",
+    "fieldSchema",
   ]) {
     const nested = record[key];
-    if (Array.isArray(nested) || (nested && typeof nested === "object")) return nested;
+    if (Array.isArray(nested)) return nested;
+    if (typeof nested === "string") return nested;
+    if (nested && typeof nested === "object" && nested !== raw) return unwrapFieldContainer(nested);
   }
   return raw;
 }
@@ -62,6 +74,9 @@ function unwrapFieldContainer(raw: unknown): unknown {
  */
 export function normalizeMerchantFields(raw: unknown): ServiceOrderField[] {
   const source = unwrapFieldContainer(raw);
+  const htmlFieldNames = typeof source === "string"
+    ? Array.from(source.matchAll(/\b(?:name|data-field)=["']([^"']+)["']/gi), (match) => match[1].trim()).filter(Boolean)
+    : [];
   const items: unknown[] =
     Array.isArray(source)
       ? source
@@ -73,7 +88,10 @@ export function normalizeMerchantFields(raw: unknown): ServiceOrderField[] {
             return { name, required: value };
           })
         : typeof source === "string"
-          ? source.split(/[,\n|]+/).map((name) => ({ name: name.trim(), label: name.trim(), required: true }))
+          ? (htmlFieldNames.length > 0
+            ? htmlFieldNames
+            : source.split(/[,\n|]+/).map((name) => name.trim()).filter(Boolean)
+          ).map((name) => ({ name, label: name, required: true }))
           : [];
 
   return items.flatMap((item): ServiceOrderField[] => {
