@@ -35,24 +35,45 @@ function normalizeOptions(value: unknown): string[] | undefined {
   return options.length > 0 ? options : undefined;
 }
 
+function unwrapFieldContainer(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+
+  const record = raw as Record<string, unknown>;
+  for (const key of [
+    "fields",
+    "order_fields",
+    "orderFields",
+    "required_fields",
+    "requiredFields",
+    "inputs",
+    "parameters",
+    "items",
+  ]) {
+    const nested = record[key];
+    if (Array.isArray(nested) || (nested && typeof nested === "object")) return nested;
+  }
+  return raw;
+}
+
 /**
  * Dhru exposes product-specific fields as:
  * [{ type, name, min, max, required }].
  * Keep the original name because Dhru expects that exact key in the order body.
  */
 export function normalizeMerchantFields(raw: unknown): ServiceOrderField[] {
+  const source = unwrapFieldContainer(raw);
   const items: unknown[] =
-    Array.isArray(raw)
-      ? raw
-      : raw && typeof raw === "object"
-        ? Object.entries(raw as Record<string, unknown>).map(([name, value]) => {
+    Array.isArray(source)
+      ? source
+      : source && typeof source === "object"
+        ? Object.entries(source as Record<string, unknown>).map(([name, value]) => {
             if (value && typeof value === "object" && !Array.isArray(value)) {
               return { ...(value as Record<string, unknown>), name };
             }
             return { name, required: value };
           })
-        : typeof raw === "string"
-          ? raw.split(/[,\n|]+/).map((name) => ({ name: name.trim(), label: name.trim(), required: true }))
+        : typeof source === "string"
+          ? source.split(/[,\n|]+/).map((name) => ({ name: name.trim(), label: name.trim(), required: true }))
           : [];
 
   return items.flatMap((item): ServiceOrderField[] => {

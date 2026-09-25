@@ -13,7 +13,14 @@ interface MerchantService {
   price?: string | number;
   cost?: string | number;
   rate?: string | number;
-  description?: string;
+  description?: unknown;
+  desc?: unknown;
+  details?: unknown;
+  detail?: unknown;
+  service_description?: unknown;
+  product_description?: unknown;
+  instructions?: unknown;
+  note?: unknown;
   active?: boolean;
   status?: string;
   type?: string;
@@ -24,6 +31,15 @@ interface MerchantService {
   requireUsername?: boolean;
   requireEmail?: boolean;
   fields?: unknown;
+  input_fields?: unknown;
+  inputFields?: unknown;
+  form_fields?: unknown;
+  formFields?: unknown;
+  order_box?: unknown;
+  orderBox?: unknown;
+  orderbox?: unknown;
+  order_form?: unknown;
+  orderForm?: unknown;
   order_fields?: unknown;
   orderFields?: unknown;
   required_fields?: unknown;
@@ -86,15 +102,63 @@ function extractDeliveryTime(value: unknown): string | null {
   return null;
 }
 
-function merchantFieldSource(service: MerchantService): unknown {
-  return service.fields ??
-    service.order_fields ??
-    service.orderFields ??
-    service.required_fields ??
-    service.requiredFields ??
-    service.requirements ??
-    service.inputs ??
-    service.parameters;
+const MERCHANT_FIELD_KEYS = [
+  "order_box",
+  "orderBox",
+  "orderbox",
+  "order_form",
+  "orderForm",
+  "fields",
+  "input_fields",
+  "inputFields",
+  "form_fields",
+  "formFields",
+  "order_fields",
+  "orderFields",
+  "required_fields",
+  "requiredFields",
+  "requirements",
+  "inputs",
+  "parameters",
+] as const;
+
+function firstNonNullish(record: Record<string, unknown>, keys: readonly string[]): unknown {
+  for (const key of keys) {
+    if (record[key] !== undefined && record[key] !== null) return record[key];
+  }
+  return undefined;
+}
+
+export function merchantFieldSource(service: MerchantService): unknown {
+  return firstNonNullish(service as unknown as Record<string, unknown>, MERCHANT_FIELD_KEYS);
+}
+
+function textValue(value: unknown): string | null {
+  if (typeof value === "string" || typeof value === "number") {
+    const text = String(value).trim();
+    return text || null;
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const record = value as Record<string, unknown>;
+  for (const key of ["text", "content", "value", "description", "details"]) {
+    const text = textValue(record[key]);
+    if (text) return text;
+  }
+  return null;
+}
+
+export function extractMerchantDescription(service: MerchantService): string | null {
+  return textValue(firstNonNullish(service as unknown as Record<string, unknown>, [
+    "description",
+    "desc",
+    "details",
+    "detail",
+    "service_description",
+    "product_description",
+    "instructions",
+    "note",
+  ]));
 }
 
 function detectServiceType(svc: MerchantService): string {
@@ -126,8 +190,8 @@ function detectServiceType(svc: MerchantService): string {
   return "other";
 }
 
-function detectIdentifierType(svc: MerchantService, serviceType: string): string {
-  const fields = normalizeMerchantFields(svc.fields);
+export function detectIdentifierType(svc: MerchantService, serviceType: string): string {
+  const fields = normalizeMerchantFields(merchantFieldSource(svc));
   if (fields.some((field) => fieldNameMatches(field, /\bimei\b/i))) return "imei";
   if (fields.some((field) => fieldNameMatches(field, /\b(serial|sn)\b/i))) return "sn";
   if (fields.some((field) => fieldNameMatches(field, /\bemail\b/i))) return "email";
@@ -215,10 +279,19 @@ export async function fetchMerchantServiceList(
       id: uuid,
       name: String(p["name"] ?? ""),
       price: String(p["price"] ?? p["cost"] ?? "0"),
-      description: p["description"] ? String(p["description"]) : undefined,
+      description: p["description"],
       type: p["type"] ? String(p["type"]) : undefined,
       deliveryTime: extractDeliveryTime(p),
         fields: p["fields"] ??
+          p["order_box"] ??
+          p["orderBox"] ??
+          p["orderbox"] ??
+          p["order_form"] ??
+          p["orderForm"] ??
+          p["input_fields"] ??
+          p["inputFields"] ??
+          p["form_fields"] ??
+          p["formFields"] ??
           p["order_fields"] ??
           p["orderFields"] ??
           p["required_fields"] ??
@@ -310,25 +383,29 @@ async function syncSingleMerchant(merchant: {
           name: svc.name,
           ...(existingService.slug ? {} : { slug }),
           price,
-          description: svc.description ?? null,
+          description: extractMerchantDescription(svc),
           deliveryTime,
           isActive,
           serviceType,
           category: serviceType,
           merchantId: merchant.id,
           ...(hasMerchantFields ? { orderFields } : {}),
+          // Merchant products are provider-owned. Recompute the identifier on
+          // every sync so an old default IMEI does not survive a provider
+          // update that describes a different order flow.
+          identifierType,
           ...(hasMerchantFields || svc.identifierType !== undefined
-            ? { identifierType, fieldLabel: svc.fieldLabel ?? identifierField?.label ?? null }
+            ? { fieldLabel: svc.fieldLabel ?? identifierField?.label ?? null }
             : {}),
-          ...(svc.requireQuantity === undefined && !hasMerchantFields ? {} : { requireQuantity: svc.requireQuantity ?? quantityFromFields }),
-          ...(svc.requireUsername === undefined && !hasMerchantFields ? {} : { requireUsername: svc.requireUsername ?? usernameFromFields }),
-          ...(svc.requireEmail === undefined && !hasMerchantFields ? {} : { requireEmail: svc.requireEmail ?? emailFromFields }),
+          ...(svc.requireQuantity === undefined && !hasMerchantFields ? { requireQuantity: false } : { requireQuantity: svc.requireQuantity ?? quantityFromFields }),
+          ...(svc.requireUsername === undefined && !hasMerchantFields ? { requireUsername: false } : { requireUsername: svc.requireUsername ?? usernameFromFields }),
+          ...(svc.requireEmail === undefined && !hasMerchantFields ? { requireEmail: false } : { requireEmail: svc.requireEmail ?? emailFromFields }),
         },
       });
     } else {
       toInsert.push({
         name: svc.name, category: serviceType, serviceType, price,
-        description: svc.description ?? null, isActive, apiServiceId: apiId, merchantId: merchant.id,
+        description: extractMerchantDescription(svc), isActive, apiServiceId: apiId, merchantId: merchant.id,
         deliveryTime,
         slug,
         identifierType,
