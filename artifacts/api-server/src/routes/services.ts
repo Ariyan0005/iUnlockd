@@ -48,11 +48,7 @@ router.get("/", async (req, res) => {
   try {
     await backfillMissingServiceSlugs();
     const requestedType = String(req.query["type"] ?? "").trim().toLowerCase();
-    const serviceTypeFilter = requestedType === "tool_rent"
-      ? ["tool", "tool_rent"]
-      : requestedType
-        ? [requestedType]
-        : null;
+    const serviceTypeFilter = requestedType ? [requestedType] : null;
 
     // Only show services where: service is active AND (no merchant OR merchant is active)
     const rows = await db

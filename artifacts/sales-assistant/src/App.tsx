@@ -27,6 +27,7 @@ import AdminSetup from "@/pages/AdminSetup";
 import ManualPayment from "@/pages/ManualPayment";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ToolRent from "@/pages/ToolRent";
+import ToolActivationCredits from "@/pages/ToolActivationCredits";
 import Services from "@/pages/Services";
 import Statement from "@/pages/Statement";
 import Invoices from "@/pages/Invoices";
@@ -117,6 +118,7 @@ function AppRoutes() {
                 }).map((slug) => <Route key={slug} path={`/${slug}`} element={<DeviceCheckPage fixedSlug={slug} />} />)}
                 <Route path="/server-services" element={<ServerServices />} />
                 <Route path="/tool-rent" element={<ToolRent />} />
+                <Route path="/tool-activation-credits" element={<ToolActivationCredits />} />
                 <Route path="/services" element={<Services />} />
                 <Route path="/imei-services/:slug" element={<ServiceDetail />} />
                 <Route path="/services/:slug" element={<ServiceDetail />} />

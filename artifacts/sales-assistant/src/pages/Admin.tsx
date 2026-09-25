@@ -1250,7 +1250,7 @@ export default function Admin() {
                     <SelectContent>
                       <SelectItem value="imei">IMEI Unlock</SelectItem>
                       <SelectItem value="server">Server Unlock</SelectItem>
-                      <SelectItem value="tool">Remote / Rent Service</SelectItem>
+                      <SelectItem value="tool">Tool Activation &amp; Credits</SelectItem>
                       <SelectItem value="game">Game / Top-up</SelectItem>
                       <SelectItem value="gift_card">Gift Card / Voucher</SelectItem>
                       <SelectItem value="other">Other Product</SelectItem>

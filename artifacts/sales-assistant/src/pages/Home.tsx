@@ -1,286 +1,305 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useSEO } from "@/lib/seo";
 import { useAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  Smartphone,
+  ArrowRight,
+  BadgeCheck,
+  Cable,
+  Check,
+  ChevronRight,
+  Clock3,
+  Cpu,
+  Globe2,
+  KeyRound,
+  LockKeyhole,
+  ScanLine,
   Server,
   ShieldCheck,
-  Zap,
-  Globe,
-  Clock,
-  Star,
-  ArrowRight,
-  Lock,
+  Smartphone,
   Wrench,
 } from "lucide-react";
 
-const FEATURES = [
+const SERVICE_LINES = [
   {
-    icon: Zap,
-    title: "Fast Processing",
-    desc: "Most orders processed within minutes to hours.",
+    index: "01",
+    icon: Smartphone,
+    label: "IMEI Services",
+    title: "Know the device before you commit.",
+    description:
+      "IMEI unlocks and device checks for carrier status, blacklist risk, warranty details, and the signals that matter at intake.",
+    href: "/imei-services",
+    action: "Explore IMEI services",
+    tone: "bg-blue-50 border-blue-200/80",
   },
   {
-    icon: ShieldCheck,
-    title: "Secure & Reliable",
-    desc: "Enterprise-grade security for every transaction.",
+    index: "02",
+    icon: Server,
+    label: "Server Services",
+    title: "Server power for complex restrictions.",
+    description:
+      "Server-powered solutions for workflows that need more than a standard IMEI request, with clear requirements and order tracking.",
+    href: "/server-services",
+    action: "Explore server services",
+    tone: "bg-indigo-50 border-indigo-200/80",
   },
   {
-    icon: Globe,
-    title: "Global Coverage",
-    desc: "Unlock devices from carriers worldwide.",
-  },
-  {
-    icon: Clock,
-    title: "24/7 Support",
-    desc: "Round-the-clock assistance for all your needs.",
+    index: "03",
+    icon: Wrench,
+    label: "Tool Activation & Credits",
+    title: "Keep your technician desk moving.",
+    description:
+      "Tool activation and credit access for technicians and resellers who need the right capability ready when the next device arrives.",
+     href: "/tool-activation-credits",
+    action: "View tool access",
+    tone: "bg-cyan-50 border-cyan-200/80",
   },
 ];
 
-const TESTIMONIALS = [
+const CHECKS = [
+  ["iPhone IMEI Check", "/iphone-imei-check"],
+  ["Apple Serial Check", "/apple-serial-check"],
+  ["iCloud Check", "/icloud-check"],
+  ["Apple Warranty", "/apple-warranty-check"],
+  ["Carrier Check", "/iphone-carrier-check"],
+  ["Samsung IMEI", "/samsung-imei-check"],
+  ["Xiaomi Mi Status", "/xiaomi-mi-status-check"],
+  ["Blacklist Check", "/imei-blacklist-check"],
+];
+
+const WORKFLOW = [
   {
-    name: "Alex M.",
-    rating: 5,
-    text: "Unlocked my iPhone in under 2 hours. Incredibly fast and reliable service!",
+    number: "01",
+    icon: ScanLine,
+    title: "Choose the right route",
+    description: "Start with an IMEI service, a server workflow, or technician tool access.",
   },
   {
-    name: "Sarah K.",
-    rating: 5,
-    text: "The server unlock service worked perfectly. Highly recommend iUnlockd!",
+    number: "02",
+    icon: Cable,
+    title: "Send clean device details",
+    description: "Each service page shows the inputs, pricing, and processing expectations up front.",
   },
   {
-    name: "James T.",
-    rating: 5,
-    text: "Best prices and super easy to use. Will definitely use again.",
+    number: "03",
+    icon: BadgeCheck,
+    title: "Track the outcome",
+    description: "Keep your orders, balance, and service history in one professional workspace.",
   },
 ];
 
 export default function Home() {
-  useSEO("iUnlockd — Professional IMEI & Server Unlock Services", "Fast, reliable IMEI and server unlock services for all major carriers worldwide. iCloud bypass, MDM removal. Trusted by thousands.");
+  useSEO(
+    "iUnlockd — Professional IMEI & Server Unlock Services",
+    "A professional service marketplace for IMEI checks, device unlocks, server-powered solutions, and technician tool access."
+  );
   const navigate = useNavigate();
   const { user } = useAuth();
 
   return (
-    <div className="flex flex-col gap-0">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 py-20 md:py-32 px-4">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        </div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <Badge variant="outline" className="mb-4 text-primary border-primary/30">
-            <Lock className="w-3 h-3 mr-1" />
-            Professional Unlock Services
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            Unlock Your Device
-            <span className="text-primary block">With Confidence</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Fast, reliable IMEI and server unlock services for all major carriers and
-            manufacturers worldwide. Trusted by thousands of customers.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" onClick={() => navigate("/imei-services")}>
-              <Smartphone className="w-5 h-5 mr-2" />
-              IMEI Services
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/server-services")}>
-              <Server className="w-5 h-5 mr-2" />
-              Server Services
-            </Button>
-          </div>
-          {user && (
-            <p className="mt-6 text-sm text-muted-foreground">
-              Welcome back, <span className="text-foreground font-medium">{user.name}</span>!
-              {" "}Balance:{" "}
-              <span className="text-primary font-semibold">
-                ${parseFloat(user.balance).toFixed(2)}
-              </span>
+    <div className="overflow-hidden">
+      <section className="relative px-4 pb-16 pt-10 md:pb-24 md:pt-16">
+        <div className="signal-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-80" />
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_.95fr] lg:gap-20">
+          <div className="relative z-10">
+            <Badge className="mb-6 gap-2 border border-blue-200 bg-blue-50 px-3 py-1.5 text-blue-700 hover:bg-blue-50">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+              The professional unlock desk
+            </Badge>
+            <h1 className="max-w-3xl font-display text-5xl font-semibold leading-[1.02] tracking-[-0.045em] text-slate-950 md:text-7xl">
+              The faster way to move a device from <span className="text-gradient-blue">locked to ready.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600 md:text-xl">
+              iUnlockd brings IMEI intelligence, server-powered solutions, and technician tool access into one reliable service marketplace.
             </p>
-          )}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button data-testid="button-browse-imei-services" size="lg" className="h-12 px-6 shadow-[0_10px_24px_hsl(221_83%_53%/.22)]" onClick={() => navigate("/imei-services")}>
+                Browse IMEI services
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button data-testid="button-open-tool-access" size="lg" variant="outline" className="h-12 border-slate-300 bg-background/70 px-6" onClick={() => navigate("/tool-activation-credits")}>
+                Tool Activation &amp; Credits
+              </Button>
+            </div>
+            {user ? (
+              <div className="mt-8 inline-flex items-center gap-3 rounded-2xl border border-blue-200/70 bg-blue-50/75 px-4 py-3 text-sm text-slate-700">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <span>Welcome back, <strong className="text-slate-950">{user.name}</strong>. Balance: <strong className="text-blue-700">${parseFloat(user.balance).toFixed(2)}</strong></span>
+              </div>
+            ) : (
+              <p className="mt-7 flex items-center gap-2 text-sm font-medium text-slate-500">
+                <LockKeyhole className="h-4 w-4 text-blue-600" />
+                Secure account workspace for every order
+              </p>
+            )}
+          </div>
+
+          <div className="surface-navy relative min-h-[28rem] overflow-hidden rounded-[2rem] p-6 shadow-[0_28px_70px_hsl(222_47%_14%/.23)] md:p-8">
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/20 blur-3xl" />
+            <div className="absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl" />
+            <div className="relative flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-white/10 pb-5">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[.24em] text-blue-200/70">Workspace / live desk</p>
+                  <p className="mt-2 font-display text-xl font-semibold text-white">Service control</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
+                  <Cpu className="h-5 w-5 text-blue-200" />
+                </div>
+              </div>
+              <div className="mt-7 rounded-2xl border border-white/10 bg-white/[.06] p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-blue-100/70">Recommended starting point</span>
+                  <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[.16em] text-emerald-200">Ready</span>
+                </div>
+                <p className="mt-8 font-display text-3xl font-semibold tracking-tight text-white">Device intelligence</p>
+                <p className="mt-2 max-w-xs text-sm leading-6 text-blue-100/65">Check status, carrier, warranty, and risk before choosing an unlock route.</p>
+                <Button data-testid="button-run-device-check" variant="secondary" className="mt-6 h-10 bg-white text-slate-950 hover:bg-blue-50" onClick={() => navigate("/imei-checker")}>
+                  Run an IMEI check
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+              <div className="mt-auto grid grid-cols-2 gap-3 pt-6">
+                <div className="rounded-2xl border border-white/10 bg-white/[.045] p-4">
+                  <Globe2 className="h-4 w-4 text-cyan-200" />
+                  <p className="mt-3 text-sm font-medium text-white">Carrier coverage</p>
+                  <p className="mt-1 text-xs text-blue-100/55">Global service catalog</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/[.045] p-4">
+                  <Clock3 className="h-4 w-4 text-blue-200" />
+                  <p className="mt-3 text-sm font-medium text-white">Clear timing</p>
+                  <p className="mt-1 text-xs text-blue-100/55">Processing shown first</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-16 px-4 bg-card/50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">Why Choose iUnlockd?</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              We deliver professional unlock services with unmatched speed and reliability.
-            </p>
+      <section className="border-y border-blue-100/80 bg-blue-50/55 px-4 py-5">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 text-sm">
+          <p className="font-medium text-slate-700">Built for the people behind every successful device handoff.</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-slate-500">
+            <span className="inline-flex items-center gap-2"><Wrench className="h-4 w-4 text-blue-600" /> Technicians</span>
+            <span className="inline-flex items-center gap-2"><Globe2 className="h-4 w-4 text-blue-600" /> Resellers</span>
+            <span className="inline-flex items-center gap-2"><Smartphone className="h-4 w-4 text-blue-600" /> Device owners</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map((f) => {
-              const Icon = f.icon;
+        </div>
+      </section>
+
+      <section className="px-4 py-20 md:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <p className="font-mono text-xs font-semibold uppercase tracking-[.22em] text-blue-600">One marketplace, three routes</p>
+              <h2 className="mt-3 max-w-2xl font-display text-4xl font-semibold tracking-[-.035em] text-slate-950 md:text-5xl">Start with the service your device actually needs.</h2>
+            </div>
+            <Link data-testid="link-all-services" to="/services" className="group inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
+              View all services <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {SERVICE_LINES.map((service) => {
+              const Icon = service.icon;
               return (
-                <Card key={f.title} className="border-border hover:border-primary/30 transition-colors">
-                  <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Icon className="w-6 h-6 text-primary" />
+                <Link data-testid={`card-service-${service.index}`} to={service.href} key={service.index} className={`interactive-lift group rounded-[1.5rem] border p-6 shadow-[0_12px_30px_hsl(222_47%_14%/.05)] ${service.tone}`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
+                      <Icon className="h-6 w-6" />
                     </div>
-                    <h3 className="font-semibold">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground">{f.desc}</p>
-                  </CardContent>
-                </Card>
+                    <span className="font-mono text-xs font-semibold tracking-[.2em] text-slate-400">{service.index}</span>
+                  </div>
+                  <p className="mt-8 text-xs font-bold uppercase tracking-[.17em] text-blue-700">{service.label}</p>
+                  <h3 className="mt-3 font-display text-2xl font-semibold tracking-[-.025em] text-slate-950">{service.title}</h3>
+                  <p className="mt-3 min-h-[4.5rem] text-sm leading-6 text-slate-600">{service.description}</p>
+                  <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-slate-950">
+                    {service.action}<ChevronRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* Services CTA */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
-          <Card
-            className="border-border hover:border-primary/40 cursor-pointer transition-all hover:shadow-lg group"
-            onClick={() => navigate("/imei-services")}
-          >
-            <CardContent className="p-8 flex flex-col gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Smartphone className="w-7 h-7 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">IMEI Services</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Unlock your device using its IMEI number. Supports all major carriers
-                  globally — AT&T, T-Mobile, Verizon, EE, Three, and more.
-                </p>
-              </div>
-              <Button variant="outline" className="w-fit mt-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                Browse IMEI Services
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="border-border hover:border-primary/40 cursor-pointer transition-all hover:shadow-lg group"
-            onClick={() => navigate("/server-services")}
-          >
-            <CardContent className="p-8 flex flex-col gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Server className="w-7 h-7 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Server Services</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Advanced server-side unlock solutions for complex carrier restrictions.
-                  MDM removal, iCloud bypass, and more.
-                </p>
-              </div>
-              <Button variant="outline" className="w-fit mt-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                Browse Server Services
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card
-            className="border-border hover:border-primary/40 cursor-pointer transition-all hover:shadow-lg group"
-            onClick={() => navigate("/tool-rent")}
-          >
-            <CardContent className="p-8 flex flex-col gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Wrench className="w-7 h-7 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-2">Remote / Rent Service</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Rent professional unlock tools or access remote services. Flexible
-                  plans for technicians and resellers.
-                </p>
-              </div>
-              <Button variant="outline" className="w-fit mt-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                Browse Remote &amp; Rent
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
+      <section className="surface-navy relative overflow-hidden px-4 py-20 md:py-24">
+        <div className="absolute inset-0 opacity-50 signal-grid" />
+        <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-start">
+          <div>
+            <p className="font-mono text-xs font-semibold uppercase tracking-[.22em] text-blue-200">A cleaner operating rhythm</p>
+            <h2 className="mt-4 font-display text-4xl font-semibold tracking-[-.04em] text-white md:text-5xl">Less guesswork. More devices out the door.</h2>
+            <p className="mt-5 max-w-md text-base leading-7 text-blue-100/65">From first check to final order, the service flow stays focused on the details technicians and customers need.</p>
+          </div>
+          <div className="grid gap-3">
+            {WORKFLOW.map((step) => {
+              const Icon = step.icon;
+              return (
+                <div key={step.number} className="flex gap-5 rounded-2xl border border-white/10 bg-white/[.055] p-5 transition-colors hover:bg-white/[.09]">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-200">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-[10px] tracking-[.18em] text-blue-200/65">{step.number}</span>
+                      <h3 className="font-semibold text-white">{step.title}</h3>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-blue-100/60">{step.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* Device checks */}
-      <section className="border-y border-primary/10 bg-primary/5 px-4 py-16">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 text-center">
-            <h2 className="mb-3 text-3xl font-bold">Free Device Check Tools</h2>
-            <p className="mx-auto max-w-2xl text-muted-foreground">
-              Check IMEI, Apple serial, iCloud, carrier, warranty, FMI, and blacklist status from one place.
-            </p>
+      <section className="px-4 py-20 md:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <p className="font-mono text-xs font-semibold uppercase tracking-[.22em] text-blue-600">Device intelligence</p>
+              <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.035em] text-slate-950">Check first. Unlock with context.</h2>
+              <p className="mt-4 max-w-xl text-slate-600">Use the right check for the brand and decision in front of you. No account required to browse the tools.</p>
+            </div>
+            <Button data-testid="button-open-checker" variant="outline" className="w-fit border-slate-300" onClick={() => navigate("/imei-checker")}>
+              Open IMEI checker <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {[
-              ["/imei-checker", "IMEI Checker"],
-              ["/iphone-imei-check", "iPhone IMEI"],
-              ["/apple-serial-check", "Apple Serial"],
-              ["/icloud-check", "iCloud Check"],
-              ["/apple-warranty-check", "Apple Warranty"],
-              ["/iphone-carrier-check", "iPhone Carrier"],
-              ["/samsung-imei-check", "Samsung IMEI"],
-              ["/xiaomi-mi-status-check", "Xiaomi Mi Status"],
-              ["/google-pixel-imei-check", "Google Pixel"],
-              ["/imei-blacklist-check", "Blacklist Check"],
-              ["/fmi-check", "FMI Check"],
-            ].map(([href, label]) => (
-              <Link key={href} to={href} className="group flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium transition-colors hover:border-primary/50 hover:text-primary">
-                {label}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          <div className="mt-9 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {CHECKS.map(([label, href]) => (
+              <Link data-testid={`link-device-check-${href.slice(1)}`} key={href} to={href} className="group flex min-h-20 items-center justify-between rounded-2xl border border-slate-200 bg-card px-4 py-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700 hover:shadow-md">
+                <span>{label}</span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-blue-500 transition-transform group-hover:translate-x-1" />
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 px-4 bg-card/50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">What Our Customers Say</h2>
-            <p className="text-muted-foreground">Trusted by thousands of customers worldwide</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t) => (
-              <Card key={t.name} className="border-border">
-                <CardContent className="p-6 flex flex-col gap-3">
-                  <div className="flex gap-1">
-                    {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground italic">"{t.text}"</p>
-                  <p className="text-sm font-semibold">— {t.name}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Banner */}
       {!user && (
-        <section className="py-16 px-4 bg-primary/5 border-y border-primary/10">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-muted-foreground mb-8">
-              Create a new account and unlock your device today. No subscription required.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button size="lg" onClick={() => navigate("/register")}>
-                Create New Account
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/login")}>
-                Sign In
-              </Button>
+        <section className="px-4 pb-20 md:pb-28">
+          <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 rounded-[1.75rem] border border-blue-200 bg-blue-50/70 p-7 md:flex-row md:items-center md:p-10">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-blue-700"><KeyRound className="h-4 w-4" /> A workspace that remembers your work</div>
+              <h2 className="mt-3 max-w-xl font-display text-3xl font-semibold tracking-[-.03em] text-slate-950 md:text-4xl">Create an account when you are ready to place an order.</h2>
+              <p className="mt-3 max-w-xl text-slate-600">Keep service history, deposits, invoices, and account actions in one secure place.</p>
+            </div>
+            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
+              <Button data-testid="button-create-account" size="lg" onClick={() => navigate("/register")}>Create an account <ArrowRight className="ml-2 h-4 w-4" /></Button>
+              <Button data-testid="button-sign-in" size="lg" variant="outline" onClick={() => navigate("/login")}>Sign in</Button>
             </div>
           </div>
         </section>
       )}
+
+      <section className="border-t border-slate-200 px-4 py-10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <p className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-blue-600" /> Built for clear, accountable service decisions.</p>
+          <Link to="/contact" className="font-semibold text-blue-700 hover:text-blue-800">Talk to support <ArrowRight className="ml-1 inline h-3.5 w-3.5" /></Link>
+        </div>
+      </section>
     </div>
   );
 }

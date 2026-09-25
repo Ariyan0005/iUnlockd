@@ -38,7 +38,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; icon: ty
 const TYPE_TABS = [
   { key: "imei",   label: "IMEI Service" },
   { key: "server", label: "Server Service" },
-  { key: "tool",   label: "Remote / Rent" },
+  { key: "tool",   label: "Tool Activation & Credits" },
 ];
 
 function orderNumber(id: number): string {

@@ -47,7 +47,7 @@ const SERVICE_NAV = [
   { label: "All Services", href: "/services", icon: ShoppingBag },
   { label: "IMEI Service", href: "/imei-services", icon: Smartphone },
   { label: "Server Service", href: "/server-services", icon: Server },
-  { label: "Remote / Rent Service", href: "/tool-rent", icon: Wrench },
+  { label: "Tool Activation & Credits", href: "/tool-activation-credits", icon: Wrench },
 ];
 const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search };
 
@@ -56,6 +56,7 @@ const NAV_USER_DESKTOP = [
   { label: "All Services", href: "/services", icon: ShoppingBag },
   { label: "IMEI Services", href: "/imei-services", icon: Smartphone },
   { label: "Server Services", href: "/server-services", icon: Server },
+  { label: "Tool Activation & Credits", href: "/tool-activation-credits", icon: Wrench },
   { label: "Orders", href: "/orders", icon: ShoppingBag },
 ];
 
@@ -233,11 +234,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Mobile hamburger */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
-                <button className="flex items-center justify-center w-12 h-12 rounded-lg hover:bg-accent transition-colors">
+                <button aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"} className="flex items-center justify-center w-12 h-12 rounded-lg hover:bg-accent transition-colors">
                   {mobileOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72 pt-14 px-0 flex flex-col transition-none duration-75">
+              <SheetContent side="right" className="w-80 bg-card pt-14 px-0 flex flex-col transition-none duration-75">
                 <div className="flex flex-col gap-0 px-3 flex-1 overflow-y-auto">
                   {user ? (
                     <>
@@ -253,7 +254,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <NavItem icon={ShoppingBag} label="All Services" href="/services" active={isActive("/services")} onClick={close} />
                       <NavItem icon={Smartphone} label="IMEI Service" href="/imei-services" active={isActive("/imei-services")} onClick={close} />
                       <NavItem icon={Server} label="Server Service" href="/server-services" active={isActive("/server-services")} onClick={close} />
-                      <NavItem icon={Wrench} label="Remote / Rent Service" href="/tool-rent" active={isActive("/tool-rent")} onClick={close} />
+                       <NavItem icon={Wrench} label="Tool Activation & Credits" href="/tool-activation-credits" active={isActive("/tool-activation-credits")} onClick={close} />
                       <NavItem icon={Search} label="IMEI Checker" href="/imei-checker" active={isActive("/imei-checker")} onClick={close} />
 
                       <div className="my-1.5 border-t border-border" />
@@ -273,7 +274,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         <div className="ml-7 flex flex-col gap-0.5">
                           <SubNavItem label="IMEI Orders" href="/orders?type=imei" active={location.pathname === "/orders" && location.search.includes("imei")} onClick={close} />
                           <SubNavItem label="Server Orders" href="/orders?type=server" active={location.pathname === "/orders" && location.search.includes("server")} onClick={close} />
-                          <SubNavItem label="Remote / Rent Orders" href="/orders?type=tool" active={location.pathname === "/orders" && location.search.includes("tool")} onClick={close} />
+                           <SubNavItem label="Tool Activation Orders" href="/orders?type=tool" active={location.pathname === "/orders" && location.search.includes("tool")} onClick={close} />
                         </div>
                       )}
 
@@ -385,7 +386,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {!hideBottomNav && (
         <nav
           aria-label="Mobile navigation"
-          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-card border-t border-gray-200 dark:border-border shadow-[0_-2px_12px_rgba(0,0,0,0.08)]"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur border-t border-border shadow-[0_-8px_24px_hsl(222_47%_14%/.08)]"
         >
           <div className="grid grid-cols-5 h-16">
             <BottomNavItem href="/" icon={House} label="Home" active={isActive("/")} />
@@ -421,7 +422,7 @@ function BottomNavItem({
       to={href}
       aria-current={active ? "page" : undefined}
       className={`flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors ${
-        active ? "text-primary font-semibold" : "text-gray-400 hover:text-gray-600 dark:text-muted-foreground"
+        active ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
       }`}
     >
       <Icon className={`w-5 h-5 transition-transform ${active ? "scale-110" : ""}`} />
