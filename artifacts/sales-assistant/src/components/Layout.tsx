@@ -41,6 +41,9 @@ import {
   FileText,
   Receipt,
   Phone,
+  Gamepad2,
+  Gift,
+  ChevronUp,
 } from "lucide-react";
 
 const SERVICE_NAV = [
@@ -51,6 +54,13 @@ const SERVICE_NAV = [
   { label: "Tool Rent", href: "/tool-rent", icon: Wrench },
 ];
 const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search };
+
+const QUICK_SERVICES = [
+  { id: "games", label: "Games", icon: Gamepad2, href: undefined },
+  { id: "gift-card", label: "Gift Card", icon: Gift, href: undefined },
+  { id: "tool-service", label: "Tool Service", icon: Wrench, href: "/tool-activation-credits" },
+  { id: "tool-rent", label: "Tool Rent", icon: Wrench, href: "/tool-rent" },
+] as const;
 
 const NAV_USER_DESKTOP = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -72,12 +82,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(location.pathname.startsWith("/orders"));
   const [accountOpen, setAccountOpen] = useState(false);
+  const [quickServicesOpen, setQuickServicesOpen] = useState(true);
+  const [selectedQuickService, setSelectedQuickService] = useState<string | null>(null);
 
   const hideFooter = NO_FOOTER_PATHS.some(p => location.pathname.startsWith(p));
   const hideBottomNav = NO_BOTTOM_NAV_PATHS.some(p => location.pathname.startsWith(p));
 
   const isActive = (href: string) =>
     href === "/" ? location.pathname === "/" : location.pathname.startsWith(href);
+
+  const routeQuickService = QUICK_SERVICES.find((service) => service.href && isActive(service.href))?.id;
+  const activeQuickService = routeQuickService ?? selectedQuickService;
+
+  const handleQuickService = (service: (typeof QUICK_SERVICES)[number]) => {
+    setSelectedQuickService(service.id);
+    if (service.href) navigate(service.href);
+  };
 
   const handleLogout = () => {
     setMobileOpen(false);
@@ -363,7 +383,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className={`flex-1 ${hideBottomNav ? "" : "pb-20 md:pb-0"}`}>{children}</main>
+      <main className={`flex-1 ${hideBottomNav ? "" : "pb-36 md:pb-0"}`}>{children}</main>
 
       {!hideFooter && <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -387,6 +407,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </footer>}
 
       {!hideBottomNav && (
+        <QuickServicesDock
+          activeService={activeQuickService ?? undefined}
+          expanded={quickServicesOpen}
+          onToggle={() => setQuickServicesOpen((open) => !open)}
+          onSelect={handleQuickService}
+        />
+      )}
+
+      {!hideBottomNav && (
         <nav
           aria-label="Mobile navigation"
           className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur border-t border-border shadow-[0_-8px_24px_hsl(222_47%_14%/.08)]"
@@ -405,6 +434,77 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
       )}
+    </div>
+  );
+}
+
+function QuickServicesDock({
+  activeService,
+  expanded,
+  onToggle,
+  onSelect,
+}: {
+  activeService?: string;
+  expanded: boolean;
+  onToggle: () => void;
+  onSelect: (service: (typeof QUICK_SERVICES)[number]) => void;
+}) {
+  return (
+    <div className="fixed inset-x-0 bottom-[4.25rem] z-40 px-3 md:hidden">
+      <div className="relative mx-auto max-w-md">
+        <div
+          className={`overflow-hidden pr-10 transition-all duration-300 ${
+            expanded ? "max-h-24 opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="flex items-end gap-2 overflow-x-auto px-1 pb-1 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {QUICK_SERVICES.map((service) => {
+              const Icon = service.icon;
+              const active = activeService === service.id;
+
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  data-testid={`quick-service-${service.id}`}
+                  aria-pressed={active}
+                  onClick={() => onSelect(service)}
+                  className={`group relative flex min-w-[78px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border px-3 py-2 text-[11px] font-semibold shadow-lg backdrop-blur transition-all duration-200 ${
+                    active
+                      ? "-translate-y-1.5 border-primary bg-primary text-primary-foreground shadow-primary/30"
+                      : "border-border/80 bg-card/95 text-muted-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:text-foreground"
+                  }`}
+                >
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${
+                      active ? "bg-white/15" : "bg-primary/10 text-primary"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="whitespace-nowrap">{service.label}</span>
+                  {active && <span className="absolute -bottom-1 h-1 w-5 rounded-full bg-primary" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          data-testid="button-toggle-quick-services"
+          aria-label={expanded ? "Collapse quick services" : "Open quick services"}
+          aria-expanded={expanded}
+          onClick={onToggle}
+          className={`absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-full border shadow-lg transition-all duration-300 ${
+            expanded
+              ? "border-primary/20 bg-card/95 text-primary backdrop-blur"
+              : "border-primary bg-primary text-primary-foreground shadow-primary/30"
+          }`}
+        >
+          <ChevronUp className={`h-4 w-4 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`} />
+        </button>
+      </div>
     </div>
   );
 }
