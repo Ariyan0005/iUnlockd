@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import Logo from "@/components/Logo";
@@ -81,6 +81,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [ordersOpen, setOrdersOpen] = useState(location.pathname.startsWith("/orders"));
   const [accountOpen, setAccountOpen] = useState(false);
   const [selectedQuickService, setSelectedQuickService] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedQuickService(null);
+  }, [location.pathname, location.search]);
 
   const hideFooter = NO_FOOTER_PATHS.some(p => location.pathname.startsWith(p));
   const hideBottomNav = NO_BOTTOM_NAV_PATHS.some(p => location.pathname.startsWith(p));
