@@ -41,6 +41,8 @@ import {
   FileText,
   Receipt,
   Phone,
+  Gamepad2,
+  Gift,
   ChevronUp,
 } from "lucide-react";
 
@@ -54,10 +56,10 @@ const SERVICE_NAV = [
 const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search };
 
 const QUICK_SERVICES = [
-  { id: "games", label: "Games", href: undefined },
-  { id: "gift-card", label: "Gift Card", href: undefined },
-  { id: "tool-service", label: "Tool Service", href: "/tool-activation-credits" },
-  { id: "tool-rent", label: "Tool Rent", href: "/tool-rent" },
+  { id: "games", label: "Games", icon: Gamepad2, href: undefined },
+  { id: "gift-card", label: "Gift Card", icon: Gift, href: undefined },
+  { id: "tool-service", label: "Tool Service", icon: Wrench, href: "/tool-activation-credits" },
+  { id: "tool-rent", label: "Tool Rent", icon: Wrench, href: "/tool-rent" },
 ] as const;
 
 const NAV_USER_DESKTOP = [
@@ -381,7 +383,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className={`flex-1 ${hideBottomNav ? "" : "pb-28 md:pb-0"}`}>{children}</main>
+      <main className={`flex-1 ${hideBottomNav ? "" : "pb-36 md:pb-0"}`}>{children}</main>
 
       {!hideFooter && <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -448,15 +450,16 @@ function QuickServicesDock({
   onSelect: (service: (typeof QUICK_SERVICES)[number]) => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-16 z-40 md:hidden">
-      <div className="relative w-full border-t border-border/60 bg-background/90 backdrop-blur-md">
+    <div className="fixed inset-x-0 bottom-[4.25rem] z-40 px-3 md:hidden">
+      <div className="relative mx-auto max-w-md">
         <div
-          className={`overflow-hidden pr-11 transition-all duration-300 ${
-            expanded ? "max-h-12 opacity-100" : "max-h-0 opacity-0"
+          className={`overflow-hidden pr-10 transition-all duration-300 ${
+            expanded ? "max-h-24 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <div className="flex snap-x items-center gap-5 overflow-x-auto scroll-smooth px-4 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-end gap-2 overflow-x-auto px-1 pb-1 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {QUICK_SERVICES.map((service) => {
+              const Icon = service.icon;
               const active = activeService === service.id;
 
               return (
@@ -465,18 +468,22 @@ function QuickServicesDock({
                   type="button"
                   data-testid={`quick-service-${service.id}`}
                   aria-pressed={active}
-                  onClick={(event) => {
-                    onSelect(service);
-                    event.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                  }}
-                  className={`relative shrink-0 snap-start px-1 py-1 text-sm font-medium transition-all duration-300 ${
+                  onClick={() => onSelect(service)}
+                  className={`group relative flex min-w-[78px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border px-3 py-2 text-[11px] font-semibold shadow-lg backdrop-blur transition-all duration-200 ${
                     active
-                      ? "-translate-y-1 font-semibold text-foreground"
-                      : "text-muted-foreground hover:-translate-y-0.5 hover:text-foreground"
+                      ? "-translate-y-1.5 border-primary bg-primary text-primary-foreground shadow-primary/30"
+                      : "border-border/80 bg-card/95 text-muted-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:text-foreground"
                   }`}
                 >
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${
+                      active ? "bg-white/15" : "bg-primary/10 text-primary"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
                   <span className="whitespace-nowrap">{service.label}</span>
-                  {active && <span className="absolute inset-x-1 -bottom-0.5 h-0.5 rounded-full bg-primary" />}
+                  {active && <span className="absolute -bottom-1 h-1 w-5 rounded-full bg-primary" />}
                 </button>
               );
             })}
@@ -489,13 +496,13 @@ function QuickServicesDock({
           aria-label={expanded ? "Collapse quick services" : "Open quick services"}
           aria-expanded={expanded}
           onClick={onToggle}
-          className={`absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm transition-all duration-300 ${
+          className={`absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-full border shadow-lg transition-all duration-300 ${
             expanded
-              ? "border-border bg-card/95 text-muted-foreground"
-              : "border-primary bg-primary text-primary-foreground"
+              ? "border-primary/20 bg-card/95 text-primary backdrop-blur"
+              : "border-primary bg-primary text-primary-foreground shadow-primary/30"
           }`}
         >
-          <ChevronUp className={`h-3.5 w-3.5 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`} />
+          <ChevronUp className={`h-4 w-4 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`} />
         </button>
       </div>
     </div>
