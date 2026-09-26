@@ -53,8 +53,8 @@ const SERVICE_NAV = [
 const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search };
 
 const QUICK_SERVICES = [
-  { id: "discover", label: "Discover", href: "/services" },
-  { id: "tools", label: "Tools", href: "/tool-activation-credits" },
+  { id: "discover", label: "Discover", href: undefined },
+  { id: "tools", label: "Tool Activation", href: "/tool-activation-credits" },
   { id: "tool-rent", label: "Tool Rent", href: "/tool-rent" },
   { id: "games", label: "Games", href: undefined },
   { id: "gift-card", label: "Gift Card", href: undefined },
@@ -442,7 +442,7 @@ function QuickServicesDock({
 }) {
   return (
     <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border/60 bg-card/90 backdrop-blur-xl md:hidden">
-      <div className="flex h-11 w-full items-center gap-6 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="grid h-11 w-full grid-cols-5 px-1">
         {QUICK_SERVICES.map((service) => {
           const active = activeService === service.id;
 
@@ -453,7 +453,9 @@ function QuickServicesDock({
               data-testid={`quick-service-${service.id}`}
               aria-pressed={active}
               onClick={() => onSelect(service)}
-              className={`relative flex h-full shrink-0 items-center whitespace-nowrap border-0 px-0 text-[13px] font-medium tracking-[-0.01em] transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:transition-opacity ${
+              className={`relative flex h-full min-w-0 w-full items-center justify-center whitespace-nowrap border-0 px-0 font-medium tracking-[-0.02em] transition-colors after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:transition-opacity ${
+                service.label === "Tool Activation" ? "text-[10px]" : "text-[12px]"
+              } ${
                 active
                   ? "text-primary after:bg-primary after:opacity-100"
                   : "text-muted-foreground after:bg-primary after:opacity-0 hover:text-foreground"
