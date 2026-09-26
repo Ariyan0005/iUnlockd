@@ -53,10 +53,11 @@ const SERVICE_NAV = [
 const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search };
 
 const QUICK_SERVICES = [
+  { id: "discover", label: "Discover", href: "/services" },
+  { id: "tools", label: "Tools", href: "/tool-activation-credits" },
+  { id: "tool-rent", label: "Tool Rent", href: "/tool-rent" },
   { id: "games", label: "Games", href: undefined },
   { id: "gift-card", label: "Gift Card", href: undefined },
-  { id: "tool-service", label: "Tool Service", href: "/tool-activation-credits" },
-  { id: "tool-rent", label: "Tool Rent", href: "/tool-rent" },
 ] as const;
 
 const NAV_USER_DESKTOP = [
