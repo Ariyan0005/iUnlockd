@@ -19,7 +19,10 @@ interface Service {
 }
 
 export default function ServerServices() {
-  useSEO("Server Unlock Services — iCloud Bypass & MDM Removal | iUnlockd", "Advanced server-side unlock solutions. iCloud bypass, MDM removal, carrier unlock for complex restrictions. Professional service.");
+  useSEO(
+    "Server Software Subscriptions & Renewals | iUnlockd",
+    "Purchase and renew unlock server software subscriptions, licenses, and server products through the iUnlockd marketplace."
+  );
   const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [filtered, setFiltered] = useState<Service[]>([]);
@@ -64,7 +67,7 @@ export default function ServerServices() {
           <h1 className="text-2xl font-bold">Server Services</h1>
         </div>
         <p className="text-muted-foreground">
-          Advanced server-side unlock solutions for complex carrier restrictions, MDM removal, and iCloud bypass.
+          Purchase, renew, and manage unlock server software subscriptions, licenses, and server products.
         </p>
       </div>
 

@@ -48,6 +48,7 @@ const SERVICE_NAV = [
   { label: "IMEI Service", href: "/imei-services", icon: Smartphone },
   { label: "Server Service", href: "/server-services", icon: Server },
   { label: "Tool Activation & Credits", href: "/tool-activation-credits", icon: Wrench },
+  { label: "Tool Rent", href: "/tool-rent", icon: Wrench },
 ];
 const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search };
 
@@ -57,6 +58,7 @@ const NAV_USER_DESKTOP = [
   { label: "IMEI Services", href: "/imei-services", icon: Smartphone },
   { label: "Server Services", href: "/server-services", icon: Server },
   { label: "Tool Activation & Credits", href: "/tool-activation-credits", icon: Wrench },
+  { label: "Tool Rent", href: "/tool-rent", icon: Wrench },
   { label: "Orders", href: "/orders", icon: ShoppingBag },
 ];
 
@@ -255,6 +257,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <NavItem icon={Smartphone} label="IMEI Service" href="/imei-services" active={isActive("/imei-services")} onClick={close} />
                       <NavItem icon={Server} label="Server Service" href="/server-services" active={isActive("/server-services")} onClick={close} />
                        <NavItem icon={Wrench} label="Tool Activation & Credits" href="/tool-activation-credits" active={isActive("/tool-activation-credits")} onClick={close} />
+                       <NavItem icon={Wrench} label="Tool Rent" href="/tool-rent" active={isActive("/tool-rent")} onClick={close} />
                       <NavItem icon={Search} label="IMEI Checker" href="/imei-checker" active={isActive("/imei-checker")} onClick={close} />
 
                       <div className="my-1.5 border-t border-border" />

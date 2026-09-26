@@ -26,9 +26,9 @@ const SERVICE_LINES = [
     index: "01",
     icon: Smartphone,
     label: "IMEI Services",
-    title: "Know the device before you commit.",
+    title: "Unlock phones by IMEI or serial.",
     description:
-      "IMEI unlocks and device checks for carrier status, blacklist risk, warranty details, and the signals that matter at intake.",
+      "IMEI and serial-based phone unlocks, MDM unlock, iCloud bypass, FRP unlock, and network unlock services.",
     href: "/imei-services",
     action: "Explore IMEI services",
     tone: "bg-blue-50 border-blue-200/80",
@@ -37,9 +37,9 @@ const SERVICE_LINES = [
     index: "02",
     icon: Server,
     label: "Server Services",
-    title: "Server power for complex restrictions.",
+    title: "Buy and renew software access.",
     description:
-      "Server-powered solutions for workflows that need more than a standard IMEI request, with clear requirements and order tracking.",
+      "Software subscriptions, renewals, licenses, and server-based products for unlocking workflows.",
     href: "/server-services",
     action: "Explore server services",
     tone: "bg-indigo-50 border-indigo-200/80",
@@ -48,12 +48,23 @@ const SERVICE_LINES = [
     index: "03",
     icon: Wrench,
     label: "Tool Activation & Credits",
-    title: "Keep your technician desk moving.",
+    title: "Tools, subscriptions, and credits.",
     description:
-      "Tool activation and credit access for technicians and resellers who need the right capability ready when the next device arrives.",
-     href: "/tool-activation-credits",
-    action: "View tool access",
+      "Purchase unlock-related tools, tool subscriptions, activations, and credit packs for your technician workflow.",
+    href: "/tool-activation-credits",
+    action: "View tool activations",
     tone: "bg-cyan-50 border-cyan-200/80",
+  },
+  {
+    index: "04",
+    icon: Wrench,
+    label: "Tool Rent",
+    title: "Rent the tool when you need it.",
+    description:
+      "Rent unlock-related tools for temporary access, technician jobs, and short-term device service workflows.",
+    href: "/tool-rent",
+    action: "Explore tool rentals",
+    tone: "bg-sky-50 border-sky-200/80",
   },
 ];
 
@@ -91,8 +102,8 @@ const WORKFLOW = [
 
 export default function Home() {
   useSEO(
-    "iUnlockd — Professional IMEI & Server Unlock Services",
-    "A professional service marketplace for IMEI checks, device unlocks, server-powered solutions, and technician tool access."
+    "iUnlockd — Professional IMEI & Unlock Services",
+    "One service marketplace for IMEI and serial unlocks, server software, tool activations, credits, and tool rentals."
   );
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -111,7 +122,7 @@ export default function Home() {
               The faster way to move a device from <span className="text-gradient-blue">locked to ready.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600 md:text-xl">
-              iUnlockd brings IMEI intelligence, server-powered solutions, and technician tool access into one reliable service marketplace.
+              iUnlockd brings IMEI and serial unlocks, server software, tool access, credits, and rentals into one reliable marketplace.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button data-testid="button-browse-imei-services" size="lg" className="h-12 px-6 shadow-[0_10px_24px_hsl(221_83%_53%/.22)]" onClick={() => navigate("/imei-services")}>
@@ -194,14 +205,14 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
-              <p className="font-mono text-xs font-semibold uppercase tracking-[.22em] text-blue-600">One marketplace, three routes</p>
+              <p className="font-mono text-xs font-semibold uppercase tracking-[.22em] text-blue-600">One marketplace, four routes</p>
               <h2 className="mt-3 max-w-2xl font-display text-4xl font-semibold tracking-[-.035em] text-slate-950 md:text-5xl">Start with the service your device actually needs.</h2>
             </div>
             <Link data-testid="link-all-services" to="/services" className="group inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
               View all services <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {SERVICE_LINES.map((service) => {
               const Icon = service.icon;
               return (

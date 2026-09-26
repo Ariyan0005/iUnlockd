@@ -20,7 +20,10 @@ interface Service {
 }
 
 export default function IMEIServices() {
-  useSEO("IMEI Unlock Services — Unlock Any Carrier Device | iUnlockd", "Professional IMEI unlock services for AT&T, T-Mobile, Verizon, EE, Three and all major carriers worldwide. Fast processing.");
+  useSEO(
+    "IMEI & Serial Unlock Services | iUnlockd",
+    "Phone unlock services using IMEI or serial number, including MDM unlock, iCloud bypass, FRP unlock, and network unlock."
+  );
   const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [filtered, setFiltered] = useState<Service[]>([]);
@@ -65,7 +68,7 @@ export default function IMEIServices() {
           <h1 className="text-2xl font-bold">IMEI Services</h1>
         </div>
         <p className="text-muted-foreground">
-          Unlock your device using its IMEI number. Supports all major carriers globally.
+          Unlock phones by IMEI or serial number, including MDM unlock, iCloud bypass, FRP unlock, and network unlock.
         </p>
       </div>
 
