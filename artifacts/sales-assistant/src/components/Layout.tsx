@@ -54,7 +54,7 @@ const CHECK_NAV = { label: "IMEI Checker", href: "/imei-checker", icon: Search }
 
 const QUICK_SERVICES = [
   { id: "discover", label: "Discover", href: undefined },
-  { id: "tools", label: "Tool Activation", href: "/tool-activation-credits" },
+  { id: "tools", label: "Tools", href: "/tool-activation-credits" },
   { id: "tool-rent", label: "Tool Rent", href: "/tool-rent" },
   { id: "games", label: "Games", href: undefined },
   { id: "gift-card", label: "Gift Card", href: undefined },
@@ -453,11 +453,9 @@ function QuickServicesDock({
               data-testid={`quick-service-${service.id}`}
               aria-pressed={active}
               onClick={() => onSelect(service)}
-              className={`relative flex h-full min-w-0 w-full items-center justify-center whitespace-nowrap border-0 px-0 font-medium tracking-[-0.02em] transition-colors after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:transition-opacity ${
-                service.label === "Tool Activation" ? "text-[10px]" : "text-[12px]"
-              } ${
+              className={`relative flex h-full min-w-0 w-full items-center justify-center whitespace-nowrap border-0 px-0 text-[13px] font-medium tracking-[-0.02em] transition-colors after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:transition-opacity ${
                 active
-                  ? "text-primary after:bg-primary after:opacity-100"
+                  ? "font-semibold text-primary after:bg-primary after:opacity-100"
                   : "text-muted-foreground after:bg-primary after:opacity-0 hover:text-foreground"
               }`}
             >
