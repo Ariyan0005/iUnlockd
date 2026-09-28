@@ -289,7 +289,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {mobileOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-80 bg-card pt-14 px-0 flex flex-col transition-none duration-75">
+              <SheetContent
+                side="left"
+                className="w-[min(86vw,24rem)] bg-card pt-14 px-0 flex flex-col data-[state=open]:duration-300 data-[state=closed]:duration-200"
+              >
                 <div className="flex flex-col gap-0 px-3 flex-1 overflow-y-auto">
                   {user ? (
                     <>
@@ -1079,9 +1082,9 @@ function MobileExternalNavItem({
     <a
       href={href}
       onClick={onClick}
-      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="h-3.5 w-3.5 shrink-0" />
       <span>{label}</span>
     </a>
   );
