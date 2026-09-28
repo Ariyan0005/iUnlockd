@@ -31,7 +31,6 @@ import {
   LogOut,
   Shield,
   ChevronDown,
-  ChevronRight,
   History,
   PlusCircle,
   Wrench,
@@ -44,7 +43,6 @@ import {
   Phone,
   ShieldCheck,
 } from "lucide-react";
-
 const SERVICE_NAV = [
   { label: "All Services", href: "/services", icon: ShoppingBag },
   { label: "IMEI Services", href: "/imei-services", icon: Smartphone },
@@ -113,14 +111,11 @@ const NO_BOTTOM_NAV_PATHS = ["/login", "/register", "/verify-email", "/forgot-pa
 function isImeiCheckPath(pathname: string) {
   return IMEI_CHECK_GROUPS.some((group) => group.items.some((item) => pathname.startsWith(item.href)));
 }
-
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [ordersOpen, setOrdersOpen] = useState(location.pathname.startsWith("/orders"));
-  const [accountOpen, setAccountOpen] = useState(false);
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const [imeiChecksOpen, setImeiChecksOpen] = useState(true);
   const [selectedQuickService, setSelectedQuickService] = useState<string | null>(null);
@@ -313,61 +308,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         onNavigate={close}
                       />
 
-                      <div className="my-1.5 border-t border-border" />
-
-                       <NavItem icon={PlusCircle} label="Add Fund" href="/add-fund" active={isActive("/add-fund")} onClick={close} highlight />
-                       <NavItem icon={History} label="Deposit History" href="/my-deposits" active={isActive("/my-deposits")} onClick={close} />
-
-                       <button
-                         onClick={() => setOrdersOpen((open) => !open)}
-                         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors w-full text-left"
-                       >
-                         <ShoppingBag className="w-4 h-4 shrink-0" />
-                         <span className="flex-1">My Order History</span>
-                         <ChevronRight className={`w-3.5 h-3.5 transition-transform ${ordersOpen ? "rotate-90" : ""}`} />
-                       </button>
-                       {ordersOpen && (
-                         <div className="ml-7 flex flex-col gap-0.5">
-                           <SubNavItem label="IMEI Orders" href="/orders?type=imei" active={location.pathname === "/orders" && location.search.includes("imei")} onClick={close} />
-                           <SubNavItem label="Server Orders" href="/orders?type=server" active={location.pathname === "/orders" && location.search.includes("server")} onClick={close} />
-                           <SubNavItem label="Tool Activation Orders" href="/orders?type=tool" active={location.pathname === "/orders" && location.search.includes("tool")} onClick={close} />
-                         </div>
-                       )}
-
-                       <div className="my-1.5 border-t border-border" />
-
-                       <button
-                         onClick={() => setAccountOpen((open) => !open)}
-                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left ${
-                           isActive("/account") || isActive("/statement") || isActive("/invoices") || isActive("/contact")
-                             ? "bg-primary/10 text-primary"
-                             : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                         }`}
-                       >
-                         <User className="w-4 h-4 shrink-0" />
-                         <span className="flex-1">My Account</span>
-                         <ChevronRight className={`w-3.5 h-3.5 transition-transform ${accountOpen ? "rotate-90" : ""}`} />
-                       </button>
-                       {accountOpen && (
-                         <div className="ml-7 flex flex-col gap-0.5">
-                           <SubNavItem label="Profile &amp; Password" href="/account" active={isActive("/account")} onClick={close} />
-                           <SubNavItem label="Statement" href="/statement" active={isActive("/statement")} onClick={close} />
-                           <SubNavItem label="Invoices" href="/invoices" active={isActive("/invoices")} onClick={close} />
-                           <SubNavItem label="Contact" href="/contact" active={isActive("/contact")} onClick={close} />
-                         </div>
-                       )}
-
-                      {user.role === "admin" && (
-                        <NavItem icon={Shield} label="Admin Panel" href="/admin" active={isActive("/admin")} onClick={close} />
-                      )}
-
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full text-left mt-1"
-                      >
-                        <LogOut className="w-4 h-4 shrink-0" />
-                        Logout
-                      </button>
                     </>
                   ) : (
                     <>
@@ -445,6 +385,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           open={accountPanelOpen}
           onOpenChange={setAccountPanelOpen}
           onNavigate={() => setAccountPanelOpen(false)}
+          onLogout={handleLogout}
           user={user}
         />
       )}
@@ -473,7 +414,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
 function DesktopSidebar({
   user,
   isActive,
@@ -697,11 +637,13 @@ function AccountBottomSheet({
   open,
   onOpenChange,
   onNavigate,
+  onLogout,
   user,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onNavigate: () => void;
+  onLogout: () => void;
   user: AuthUser;
 }) {
   return (
@@ -739,7 +681,26 @@ function AccountBottomSheet({
               <span>{item.label}</span>
             </Link>
           ))}
+          {user.role === "admin" && (
+            <Link
+              to="/admin"
+              onClick={onNavigate}
+              className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card px-3 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-primary/5"
+            >
+              <Shield className="h-4 w-4 shrink-0 text-primary" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
         </div>
+
+        <button
+          type="button"
+          onClick={onLogout}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-3 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </button>
       </SheetContent>
     </Sheet>
   );
@@ -882,16 +843,3 @@ function NavItem({
   );
 }
 
-function SubNavItem({ label, href, active, onClick }: { label: string; href: string; active: boolean; onClick: () => void }) {
-  return (
-    <Link
-      to={href}
-      onClick={onClick}
-      className={`flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-        active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-      }`}
-    >
-      {label}
-    </Link>
-  );
-}
