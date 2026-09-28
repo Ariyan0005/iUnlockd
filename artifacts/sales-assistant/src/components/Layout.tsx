@@ -96,6 +96,16 @@ const QUICK_SERVICES = [
   { id: "gift-card", label: "Gift Card", href: undefined },
 ] as const;
 
+const ACCOUNT_NAV_ITEMS = [
+  { label: "Orders", href: "/orders", icon: ShoppingBag },
+  { label: "Profile & Password", href: "/account", icon: User },
+  { label: "Statement", href: "/statement", icon: FileText },
+  { label: "Invoices", href: "/invoices", icon: Receipt },
+  { label: "Contact", href: "/contact", icon: Phone },
+  { label: "Add Fund", href: "/add-fund", icon: PlusCircle },
+  { label: "Deposit History", href: "/my-deposits", icon: History },
+] as const;
+
 const NO_FOOTER_PATHS = ["/add-fund", "/manual-payment"];
 const NO_BOTTOM_NAV_PATHS = ["/login", "/register", "/verify-email", "/forgot-password", "/admin"];
 
@@ -103,12 +113,15 @@ function isImeiCheckPath(pathname: string) {
   return IMEI_CHECK_GROUPS.some((group) => group.items.some((item) => pathname.startsWith(item.href)));
 }
 
+function isAccountPath(pathname: string) {
+  return ACCOUNT_NAV_ITEMS.some((item) => pathname.startsWith(item.href));
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [ordersOpen, setOrdersOpen] = useState(location.pathname.startsWith("/orders"));
   const [accountOpen, setAccountOpen] = useState(false);
   const [imeiChecksOpen, setImeiChecksOpen] = useState(true);
   const [selectedQuickService, setSelectedQuickService] = useState<string | null>(null);
@@ -122,6 +135,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isImeiCheckPath(location.pathname)) setImeiChecksOpen(true);
+    if (isAccountPath(location.pathname)) setAccountOpen(true);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -302,48 +316,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
                       <div className="my-1.5 border-t border-border" />
 
-                      <NavItem icon={PlusCircle} label="Add Fund" href="/add-fund" active={isActive("/add-fund")} onClick={close} highlight />
-                      <NavItem icon={History} label="Deposit History" href="/my-deposits" active={isActive("/my-deposits")} onClick={close} />
+                       <div className="my-1.5 border-t border-border" />
 
-                      <button
-                        onClick={() => setOrdersOpen(o => !o)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors w-full text-left"
-                      >
-                        <ShoppingBag className="w-4 h-4 shrink-0" />
-                        <span className="flex-1">My Order History</span>
-                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${ordersOpen ? "rotate-90" : ""}`} />
-                      </button>
-                      {ordersOpen && (
-                        <div className="ml-7 flex flex-col gap-0.5">
-                          <SubNavItem label="IMEI Orders" href="/orders?type=imei" active={location.pathname === "/orders" && location.search.includes("imei")} onClick={close} />
-                          <SubNavItem label="Server Orders" href="/orders?type=server" active={location.pathname === "/orders" && location.search.includes("server")} onClick={close} />
-                           <SubNavItem label="Tool Activation Orders" href="/orders?type=tool" active={location.pathname === "/orders" && location.search.includes("tool")} onClick={close} />
-                        </div>
-                      )}
-
-                      <div className="my-1.5 border-t border-border" />
-
-                      {/* My Account expandable */}
-                      <button
-                        onClick={() => setAccountOpen(o => !o)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left ${
-                          isActive("/account") || isActive("/statement") || isActive("/invoices") || isActive("/contact")
-                            ? "bg-primary/10 text-primary"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                        }`}
-                      >
-                        <User className="w-4 h-4 shrink-0" />
-                        <span className="flex-1">My Account</span>
-                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${accountOpen ? "rotate-90" : ""}`} />
-                      </button>
-                      {accountOpen && (
-                        <div className="ml-7 flex flex-col gap-0.5">
-                          <SubNavItem label="Profile &amp; Password" href="/account" active={isActive("/account")} onClick={close} />
-                          <SubNavItem label="Statement" href="/statement" active={isActive("/statement")} onClick={close} />
-                          <SubNavItem label="Invoices" href="/invoices" active={isActive("/invoices")} onClick={close} />
-                          <SubNavItem label="Contact" href="/contact" active={isActive("/contact")} onClick={close} />
-                        </div>
-                      )}
+                       <MobileAccountGroup
+                         open={accountOpen}
+                         onToggle={() => setAccountOpen((open) => !open)}
+                         isActive={isActive}
+                         onNavigate={close}
+                       />
 
                       {user.role === "admin" && (
                         <NavItem icon={Shield} label="Admin Panel" href="/admin" active={isActive("/admin")} onClick={close} />
@@ -393,6 +373,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         user={user}
         isActive={isActive}
         onLogout={handleLogout}
+        accountOpen={accountOpen}
+        setAccountOpen={setAccountOpen}
         imeiChecksOpen={imeiChecksOpen}
         setImeiChecksOpen={setImeiChecksOpen}
       />
@@ -455,12 +437,16 @@ function DesktopSidebar({
   user,
   isActive,
   onLogout,
+  accountOpen,
+  setAccountOpen,
   imeiChecksOpen,
   setImeiChecksOpen,
 }: {
   user: AuthUser | null;
   isActive: (href: string) => boolean;
   onLogout: () => void;
+  accountOpen: boolean;
+  setAccountOpen: (open: boolean) => void;
   imeiChecksOpen: boolean;
   setImeiChecksOpen: (open: boolean) => void;
 }) {
@@ -512,20 +498,25 @@ function DesktopSidebar({
               <p className="px-3 pb-2 pt-5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
                 Account
               </p>
-              <DesktopNavItem href="/orders" icon={ShoppingBag} label="Orders" active={isActive("/orders")} />
-              <DesktopNavItem href="/add-fund" icon={PlusCircle} label="Add Fund" active={isActive("/add-fund")} />
-              <DesktopNavItem href="/my-deposits" icon={History} label="Deposit History" active={isActive("/my-deposits")} />
-              <DesktopNavItem href="/account" icon={User} label="My Account" active={isActive("/account")} />
+              <DesktopAccountGroup
+                open={accountOpen}
+                onToggle={() => setAccountOpen(!accountOpen)}
+                isActive={isActive}
+              />
               {user.role === "admin" && (
                 <DesktopNavItem href="/admin" icon={Shield} label="Admin Panel" active={isActive("/admin")} />
               )}
             </>
           )}
 
-          <p className="px-3 pb-2 pt-5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
-            Support
-          </p>
-          <DesktopNavItem href="/contact" icon={Phone} label="Contact" active={isActive("/contact")} />
+          {!user && (
+            <>
+              <p className="px-3 pb-2 pt-5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
+                Support
+              </p>
+              <DesktopNavItem href="/contact" icon={Phone} label="Contact" active={isActive("/contact")} />
+            </>
+          )}
         </div>
 
         <div className="border-t border-border/70 p-3">
@@ -676,6 +667,113 @@ function MobileImeiCheckGroup({
   );
 }
 
+function DesktopAccountGroup({
+  open,
+  onToggle,
+  isActive,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  isActive: (href: string) => boolean;
+}) {
+  const groupActive = ACCOUNT_NAV_ITEMS.some((item) => isActive(item.href));
+
+  return (
+    <div className="mt-1 overflow-hidden rounded-2xl border border-border/70 bg-background/45">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex w-full items-center gap-3 px-3 py-3 text-left text-sm font-semibold transition-colors ${
+          groupActive
+            ? "bg-primary/10 text-primary"
+            : "text-foreground hover:bg-accent"
+        }`}
+      >
+        <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${
+          groupActive ? "bg-primary/15" : "bg-muted"
+        }`}>
+          <User className="h-4 w-4" />
+        </span>
+        <span className="flex-1">My Account</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="border-t border-border/60 px-2 py-2">
+          {ACCOUNT_NAV_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors ${
+                isActive(item.href)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <item.icon className="h-3.5 w-3.5 shrink-0" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileAccountGroup({
+  open,
+  onToggle,
+  isActive,
+  onNavigate,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  isActive: (href: string) => boolean;
+  onNavigate: () => void;
+}) {
+  const groupActive = ACCOUNT_NAV_ITEMS.some((item) => isActive(item.href));
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors ${
+          groupActive
+            ? "bg-primary/10 text-primary"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+        }`}
+      >
+        <User className="h-4 w-4 shrink-0" />
+        <span className="flex-1">My Account</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="ml-7 border-l border-border/80 pl-3">
+          {ACCOUNT_NAV_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              onClick={onNavigate}
+              className={`flex items-center gap-2 rounded-lg px-2 py-2.5 text-xs font-medium transition-colors ${
+                isActive(item.href)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <item.icon className="h-3.5 w-3.5 shrink-0" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DesktopNavItem({
   icon: Icon,
   label,
@@ -791,20 +889,6 @@ function NavItem({
       }`}
     >
       <Icon className="w-4 h-4 shrink-0" />
-      {label}
-    </Link>
-  );
-}
-
-function SubNavItem({ label, href, active, onClick }: { label: string; href: string; active: boolean; onClick: () => void }) {
-  return (
-    <Link
-      to={href}
-      onClick={onClick}
-      className={`flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-        active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-      }`}
-    >
       {label}
     </Link>
   );
