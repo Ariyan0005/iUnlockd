@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth, type User as AuthUser } from "@/lib/auth";
 import Logo from "@/components/Logo";
@@ -86,6 +86,8 @@ const IMEI_CHECK_GROUPS = [
   },
 ] as const;
 
+const MOBILE_IMEI_CHECK_GROUPS = IMEI_CHECK_GROUPS.filter((group) => group.label !== "All-in-one");
+
 const QUICK_SERVICES = [
   { id: "discover", label: "Discover", href: undefined },
   { id: "tools", label: "Tools", href: "/tool-activation-credits" },
@@ -110,6 +112,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [imeiChecksOpen, setImeiChecksOpen] = useState(true);
   const [selectedQuickService, setSelectedQuickService] = useState<string | null>(null);
+  const [quickServicesHidden, setQuickServicesHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const scrollStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setSelectedQuickService(null);
@@ -118,6 +123,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isImeiCheckPath(location.pathname)) setImeiChecksOpen(true);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = Math.max(window.scrollY, 0);
+      const scrollDelta = currentScrollY - lastScrollY.current;
+
+      if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current);
+
+      if (currentScrollY <= 8 || scrollDelta < -2) {
+        setQuickServicesHidden(false);
+      } else if (scrollDelta > 2) {
+        setQuickServicesHidden(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+      scrollStopTimer.current = setTimeout(() => {
+        setQuickServicesHidden(false);
+      }, 160);
+    };
+
+    lastScrollY.current = Math.max(window.scrollY, 0);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current);
+    };
+  }, []);
 
   const hideFooter = NO_FOOTER_PATHS.some(p => location.pathname.startsWith(p));
   const hideBottomNav = NO_BOTTOM_NAV_PATHS.some(p => location.pathname.startsWith(p));
@@ -326,25 +359,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </>
                   ) : (
                     <>
-                      <div className="flex flex-col gap-2.5 mb-5">
-                        <Link
-                          to="/login"
-                          onClick={close}
-                          className="flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm active:scale-[0.98]"
-                        >
-                          <LogIn className="w-5 h-5" />
-                          Login to your account
-                        </Link>
-                        <Link
-                          to="/register"
-                          onClick={close}
-                          className="flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl text-sm font-semibold border-2 border-primary/25 text-primary bg-primary/5 hover:bg-primary/10 transition-all active:scale-[0.98]"
-                        >
-                          <UserPlus className="w-5 h-5" />
-                          Create new account
-                        </Link>
-                      </div>
-
                       <div className="pt-1">
                         <p className="px-3 text-base font-bold tracking-wide text-foreground mb-3">
                           Our Services
@@ -410,6 +424,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <QuickServicesDock
           activeService={activeQuickService ?? undefined}
           onSelect={handleQuickService}
+          hidden={quickServicesHidden}
         />
       )}
 
@@ -633,7 +648,7 @@ function MobileImeiCheckGroup({
 
       {open && (
         <div className="ml-7 border-l border-border/80 pl-3">
-          {IMEI_CHECK_GROUPS.map((group) => (
+          {MOBILE_IMEI_CHECK_GROUPS.map((group) => (
             <div key={group.label} className="pb-2 last:pb-0">
               <p className="px-2 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/70">
                 {group.label}
@@ -690,12 +705,18 @@ function DesktopNavItem({
 function QuickServicesDock({
   activeService,
   onSelect,
+  hidden,
 }: {
   activeService?: string;
   onSelect: (service: (typeof QUICK_SERVICES)[number]) => void;
+  hidden: boolean;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border/60 bg-card/90 backdrop-blur-xl md:hidden">
+    <div
+      className={`fixed inset-x-0 bottom-16 z-40 border-t border-border/60 bg-card/90 backdrop-blur-xl transition-transform duration-200 ease-out md:hidden ${
+        hidden ? "translate-y-full pointer-events-none" : "translate-y-0"
+      }`}
+    >
       <div className="grid h-11 w-full grid-cols-5 px-1">
         {QUICK_SERVICES.map((service) => {
           const active = activeService === service.id;
