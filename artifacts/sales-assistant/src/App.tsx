@@ -34,6 +34,7 @@ import Invoices from "@/pages/Invoices";
 import Contact from "@/pages/Contact";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import SEOResourcePage from "@/pages/SEOResourcePage";
 import NotFound from "@/pages/not-found";
 import DeviceCheckPage from "@/pages/DeviceCheckPage";
 import AdminCheckApis from "@/pages/AdminCheckApis";
@@ -120,6 +121,26 @@ function AppRoutes() {
                 <Route path="/tool-rent" element={<ToolRent />} />
                 <Route path="/tool-activation-credits" element={<ToolActivationCredits />} />
                 <Route path="/services" element={<Services />} />
+                <Route
+                  path="/parts-compatibility/display-compatibility"
+                  element={<SEOResourcePage page="display-compatibility" />}
+                />
+                <Route
+                  path="/parts-compatibility/battery-compatibility"
+                  element={<SEOResourcePage page="battery-compatibility" />}
+                />
+                <Route
+                  path="/parts-compatibility/ic-compatibility"
+                  element={<SEOResourcePage page="ic-compatibility" />}
+                />
+                <Route
+                  path="/parts-compatibility/tp-isp-pinout"
+                  element={<SEOResourcePage page="tp-isp-pinout" />}
+                />
+                <Route
+                  path="/erp-for-business"
+                  element={<SEOResourcePage page="erp-for-business" />}
+                />
                 <Route path="/imei-services/:slug" element={<ServiceDetail />} />
                 <Route path="/services/:slug" element={<ServiceDetail />} />
                 <Route path="/contact" element={<Contact />} />

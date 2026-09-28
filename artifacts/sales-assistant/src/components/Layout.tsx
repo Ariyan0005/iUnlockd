@@ -26,7 +26,6 @@ import {
   Smartphone,
   Server,
   ShoppingBag,
-  Wallet,
   User,
   LogOut,
   Shield,
@@ -42,6 +41,12 @@ import {
   Receipt,
   Phone,
   ShieldCheck,
+  Monitor,
+  Battery,
+  Cpu,
+  Cable,
+  Network,
+  ExternalLink,
 } from "lucide-react";
 const SERVICE_NAV = [
   { label: "All Services", href: "/services", icon: ShoppingBag },
@@ -55,6 +60,23 @@ const MOBILE_SERVICE_NAV = SERVICE_NAV.filter(
   (item) =>
     !["/imei-services", "/server-services", "/tool-activation-credits", "/tool-rent"].includes(item.href),
 );
+
+const PARTS_NAV_ITEMS = [
+  { label: "Display Compatibility", href: "/parts-compatibility/display-compatibility", icon: Monitor },
+  { label: "Battery Compatibility", href: "/parts-compatibility/battery-compatibility", icon: Battery },
+  { label: "IC Compatibility", href: "/parts-compatibility/ic-compatibility", icon: Cpu },
+  { label: "TP & ISP Pinout", href: "/parts-compatibility/tp-isp-pinout", icon: Cable },
+] as const;
+
+const PLATFORM_NAV_ITEMS = [
+  { label: "ERP for Business", href: "/erp-for-business", icon: Network },
+] as const;
+
+const GADGET_SALALAH_NAV_ITEM = {
+  label: "Gadget Salalah",
+  href: "https://gadgetsalalah.com",
+  icon: ExternalLink,
+} as const;
 
 const IMEI_CHECK_GROUPS = [
   {
@@ -123,6 +145,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const [imeiChecksOpen, setImeiChecksOpen] = useState(true);
+  const [partsOpen, setPartsOpen] = useState(true);
+  const [platformOpen, setPlatformOpen] = useState(true);
   const [selectedQuickService, setSelectedQuickService] = useState<string | null>(null);
   const [quickServicesHidden, setQuickServicesHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -200,11 +224,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="hidden md:flex w-20 h-8 rounded-lg bg-muted animate-pulse" />
             ) : user ? (
               <>
-                <Button variant="default" size="sm" onClick={() => navigate("/add-fund")} className="hidden sm:flex">
-                  <PlusCircle className="w-4 h-4 mr-1" />
-                  Add Fund
-                </Button>
-
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="hidden md:flex gap-1">
@@ -256,10 +275,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </>
             ) : authLoading ? null : (
               <div className="hidden md:flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>
-                  <LogIn className="w-4 h-4 mr-1.5" />
-                  Login
-                </Button>
                 <Button size="sm" onClick={() => navigate("/register")}>
                   <UserPlus className="w-4 h-4 mr-1.5" />
                   Register
@@ -267,20 +282,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             )}
 
-            {/* Mobile: Login button when logged out */}
-          {!authLoading && !user && (
-            <Link to="/login" onClick={close} className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors active:scale-[0.97]">
-              <LogIn className="w-4 h-4" />
-              Login
-            </Link>
-          )}
-          {/* Mobile: Deposit icon when logged in */}
-          {!authLoading && user && (
-            <button onClick={() => { close(); navigate("/add-fund"); }} className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-              <Wallet className="w-4 h-4" />
-              Deposit
-            </button>
-          )}
           {/* Mobile hamburger */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
@@ -302,6 +303,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
                       <NavItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" active={isActive("/dashboard")} onClick={close} />
                       <NavItem icon={ShoppingBag} label="All Services" href="/services" active={isActive("/services")} onClick={close} />
+                       <MobileNavGroup
+                         label="Parts Compatibility"
+                         icon={Cpu}
+                         items={PARTS_NAV_ITEMS}
+                         open={partsOpen}
+                         onToggle={() => setPartsOpen((open) => !open)}
+                         isActive={isActive}
+                         onNavigate={close}
+                       />
+                       <MobileNavGroup
+                         label="Our Platform"
+                         icon={Network}
+                         items={PLATFORM_NAV_ITEMS}
+                         externalItem={GADGET_SALALAH_NAV_ITEM}
+                         open={platformOpen}
+                         onToggle={() => setPlatformOpen((open) => !open)}
+                         isActive={isActive}
+                         onNavigate={close}
+                       />
                       <MobileImeiCheckGroup
                         open={imeiChecksOpen}
                         onToggle={() => setImeiChecksOpen((open) => !open)}
@@ -326,6 +346,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             onClick={close}
                           />
                         ))}
+                         <MobileNavGroup
+                           label="Parts Compatibility"
+                           icon={Cpu}
+                           items={PARTS_NAV_ITEMS}
+                           open={partsOpen}
+                           onToggle={() => setPartsOpen((open) => !open)}
+                           isActive={isActive}
+                           onNavigate={close}
+                         />
+                         <MobileNavGroup
+                           label="Our Platform"
+                           icon={Network}
+                           items={PLATFORM_NAV_ITEMS}
+                           externalItem={GADGET_SALALAH_NAV_ITEM}
+                           open={platformOpen}
+                           onToggle={() => setPlatformOpen((open) => !open)}
+                           isActive={isActive}
+                           onNavigate={close}
+                         />
                         <MobileImeiCheckGroup
                           open={imeiChecksOpen}
                           onToggle={() => setImeiChecksOpen((open) => !open)}
@@ -348,6 +387,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         onLogout={handleLogout}
         imeiChecksOpen={imeiChecksOpen}
         setImeiChecksOpen={setImeiChecksOpen}
+        partsOpen={partsOpen}
+        setPartsOpen={setPartsOpen}
+        platformOpen={platformOpen}
+        setPlatformOpen={setPlatformOpen}
       />
 
       <main className={`flex-1 md:pl-64 ${hideBottomNav ? "" : "pb-28 md:pb-0"}`}>{children}</main>
@@ -421,12 +464,20 @@ function DesktopSidebar({
   onLogout,
   imeiChecksOpen,
   setImeiChecksOpen,
+  partsOpen,
+  setPartsOpen,
+  platformOpen,
+  setPlatformOpen,
 }: {
   user: AuthUser | null;
   isActive: (href: string) => boolean;
   onLogout: () => void;
   imeiChecksOpen: boolean;
   setImeiChecksOpen: (open: boolean) => void;
+  partsOpen: boolean;
+  setPartsOpen: (open: boolean) => void;
+  platformOpen: boolean;
+  setPlatformOpen: (open: boolean) => void;
 }) {
   return (
     <aside className="fixed inset-y-0 left-0 top-16 z-40 hidden w-64 border-r border-border bg-card/95 md:flex">
@@ -455,7 +506,33 @@ function DesktopSidebar({
           <p className="px-3 pb-2 pt-5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
             Services
           </p>
-          {SERVICE_NAV.map((item) => (
+          {SERVICE_NAV.slice(0, 1).map((item) => (
+            <DesktopNavItem
+              key={item.href}
+              href={item.href}
+              icon={item.icon}
+              label={item.label}
+              active={isActive(item.href)}
+            />
+          ))}
+          <DesktopNavGroup
+            label="Parts Compatibility"
+            icon={Cpu}
+            items={PARTS_NAV_ITEMS}
+            open={partsOpen}
+            onToggle={() => setPartsOpen(!partsOpen)}
+            isActive={isActive}
+          />
+          <DesktopNavGroup
+            label="Our Platform"
+            icon={Network}
+            items={PLATFORM_NAV_ITEMS}
+            externalItem={GADGET_SALALAH_NAV_ITEM}
+            open={platformOpen}
+            onToggle={() => setPlatformOpen(!platformOpen)}
+            isActive={isActive}
+          />
+          {SERVICE_NAV.slice(1).map((item) => (
             <DesktopNavItem
               key={item.href}
               href={item.href}
@@ -733,6 +810,83 @@ function DesktopNavItem({
   );
 }
 
+function DesktopNavGroup({
+  label,
+  icon: Icon,
+  items,
+  externalItem,
+  open,
+  onToggle,
+  isActive,
+}: {
+  label: string;
+  icon: React.ElementType;
+  items: ReadonlyArray<{ label: string; href: string; icon: React.ElementType }>;
+  externalItem?: { label: string; href: string; icon: React.ElementType };
+  open: boolean;
+  onToggle: () => void;
+  isActive: (href: string) => boolean;
+}) {
+  const groupActive = items.some((item) => isActive(item.href));
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
+          groupActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
+        }`}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="flex-1">{label}</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="ml-5 mt-1 border-l border-border/80 pl-3">
+          {items.map((item) => (
+            <DesktopNavItem
+              key={item.href}
+              href={item.href}
+              icon={item.icon}
+              label={item.label}
+              active={isActive(item.href)}
+            />
+          ))}
+          {externalItem && (
+            <DesktopExternalNavItem
+              label={externalItem.label}
+              href={externalItem.href}
+              icon={externalItem.icon}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DesktopExternalNavItem({
+  label,
+  href,
+  icon: Icon,
+}: {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <a
+      href={href}
+      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span>{label}</span>
+    </a>
+  );
+}
+
 function QuickServicesDock({
   activeService,
   onSelect,
@@ -844,3 +998,91 @@ function NavItem({
   );
 }
 
+function MobileNavGroup({
+  label,
+  icon: Icon,
+  items,
+  externalItem,
+  open,
+  onToggle,
+  isActive,
+  onNavigate,
+}: {
+  label: string;
+  icon: React.ElementType;
+  items: ReadonlyArray<{ label: string; href: string; icon: React.ElementType }>;
+  externalItem?: { label: string; href: string; icon: React.ElementType };
+  open: boolean;
+  onToggle: () => void;
+  isActive: (href: string) => boolean;
+  onNavigate: () => void;
+}) {
+  const groupActive = items.some((item) => isActive(item.href));
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
+          groupActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+        }`}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="flex-1">{label}</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="ml-7 border-l border-border/80 pl-3">
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              onClick={onNavigate}
+              className={`flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium transition-colors ${
+                isActive(item.href)
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <item.icon className="h-3.5 w-3.5 shrink-0" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+          {externalItem && (
+            <MobileExternalNavItem
+              label={externalItem.label}
+              href={externalItem.href}
+              icon={externalItem.icon}
+              onClick={onNavigate}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileExternalNavItem({
+  label,
+  href,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  onClick: () => void;
+}) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span>{label}</span>
+    </a>
+  );
+}
