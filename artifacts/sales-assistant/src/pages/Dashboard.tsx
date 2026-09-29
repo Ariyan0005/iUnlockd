@@ -28,7 +28,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 };
 
 export default function Dashboard() {
-  useSEO("Dashboard — iUnlockd", "Manage your unlock orders and account from your iUnlockd dashboard.");
+  useSEO("Dashboard — iUnlockd", "Manage your unlock orders and account from your iUnlockd dashboard.", {
+    robots: "noindex, nofollow",
+  });
   const { user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);

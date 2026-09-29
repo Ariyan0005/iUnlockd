@@ -1,7 +1,12 @@
 import { ArrowLeft, Mail, MessageCircle, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSEO } from "@/lib/seo";
 
 export default function Contact() {
+  useSEO(
+    "Contact iUnlockd Support",
+    "Contact iUnlockd support by email, WhatsApp, or Telegram for questions about device services and orders.",
+  );
   const navigate = useNavigate();
   return (
     <div className="max-w-md mx-auto px-4 py-8">

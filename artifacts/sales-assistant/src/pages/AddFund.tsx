@@ -9,7 +9,9 @@ function generateOrderId(): string {
 }
 
 export default function AddFund() {
-  useSEO("Add Funds — iUnlockd", "Add funds to your iUnlockd account balance.");
+  useSEO("Add Funds — iUnlockd", "Add funds to your iUnlockd account balance.", {
+    robots: "noindex, nofollow",
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const { user, token } = useAuth();

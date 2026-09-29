@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
+import { useSEO } from "@/lib/seo";
 
 export default function Privacy() {
+  useSEO(
+    "Privacy Policy — iUnlockd",
+    "Read how iUnlockd collects, uses, protects, and retains account, order, device, and payment information.",
+  );
   return (
     <div className="min-h-screen bg-white">
       <header className="flex items-center justify-between px-4 py-3 border-b border-gray-100">

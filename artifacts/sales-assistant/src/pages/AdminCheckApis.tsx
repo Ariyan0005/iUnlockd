@@ -131,7 +131,9 @@ function authHeaders() {
 }
 
 export default function AdminCheckApis() {
-  useSEO("Check API Providers — Admin | iUnlockd", "Configure server-side device check providers for iUnlockd public verification routes.");
+  useSEO("Check API Providers — Admin | iUnlockd", "Configure server-side device check providers for iUnlockd public verification routes.", {
+    robots: "noindex, nofollow",
+  });
   const [providers, setProviders] = useState<Provider[]>([]);
   const [form, setForm] = useState<ProviderForm>(EMPTY_FORM);
   const [editing, setEditing] = useState<Provider | null>(null);

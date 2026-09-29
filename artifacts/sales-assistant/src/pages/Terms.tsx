@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
 import Logo from "@/components/Logo";
+import { useSEO } from "@/lib/seo";
 
 export default function Terms() {
+  useSEO(
+    "Terms of Service — iUnlockd",
+    "Read the iUnlockd terms for device unlock services, digital products, payments, orders, and account use.",
+  );
   return (
     <div className="min-h-screen bg-white">
       <header className="flex items-center justify-between px-4 py-3 border-b border-gray-100">

@@ -146,7 +146,20 @@ export default function SEOResourcePage({ page }: { page: ResourcePageId }) {
   const config = RESOURCE_PAGES[page];
   const Icon = config.icon;
 
-  useSEO(config.title, config.description);
+  useSEO(config.title, config.description, {
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: config.heading,
+      description: config.description,
+      author: { "@type": "Organization", name: "iUnlockd" },
+      publisher: { "@type": "Organization", name: "iUnlockd" },
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": new URL(window.location.pathname, window.location.origin).toString(),
+      },
+    },
+  });
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6">

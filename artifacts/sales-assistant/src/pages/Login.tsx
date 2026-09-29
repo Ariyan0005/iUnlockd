@@ -3,6 +3,7 @@ import { useLang, LANGUAGES } from "@/lib/i18n";
 import { useSEO } from "@/lib/seo";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { loadTurnstile } from "@/lib/turnstile";
 import { Eye, EyeOff, Globe, ChevronDown } from "lucide-react";
 import Logo from "@/components/Logo";
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -32,7 +33,9 @@ const GithubIcon = () => (
 );
 
 export default function Login() {
-  useSEO("Sign In — iUnlockd", "Sign in to your iUnlockd account to manage your unlock orders and services.");
+  useSEO("Sign In — iUnlockd", "Sign in to your iUnlockd account to manage your unlock orders and services.", {
+    robots: "noindex, nofollow",
+  });
   const { login } = useAuth();
   const { t, setLang, currentLang } = useLang();
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -53,9 +56,10 @@ export default function Login() {
   const tsRef = useRef<HTMLDivElement>(null);
   const tsId = useRef<string|null>(null);
 
-  useEffect(()=>{
+  useEffect(() => {
     if(showTotp) return;
-    const go=()=>{
+    let cancelled = false;
+    const go = () => {
       if(!tsRef.current||tsId.current!==null||!window.turnstile) return;
       tsId.current=window.turnstile.render(tsRef.current,{
         sitekey:TS_KEY,theme:"light",
@@ -64,10 +68,21 @@ export default function Login() {
         "error-callback":()=>setCaptcha(""),
       });
     };
-    if(window.turnstile) go();
-    else{const p=setInterval(()=>{if(window.turnstile){clearInterval(p);go();}},150);return()=>clearInterval(p);}
-    return()=>{if(window.turnstile&&tsId.current!==null){try{window.turnstile.remove(tsId.current);}catch{}tsId.current=null;setCaptcha("");}};
-  },[showTotp]);
+    void loadTurnstile().then(() => {
+      if (!cancelled) go();
+    }).catch(() => {
+      if (!cancelled) setError("Security check could not load. Please refresh and try again.");
+    });
+
+    return () => {
+      cancelled = true;
+      if(window.turnstile&&tsId.current!==null){
+        try { window.turnstile.remove(tsId.current); } catch {}
+        tsId.current = null;
+        setCaptcha("");
+      }
+    };
+  }, [showTotp]);
 
   const handlePasskeyLogin = async () => {
     setError(""); setPasskeyLoading(true);
