@@ -46,7 +46,9 @@ function orderNumber(id: number): string {
 }
 
 export default function Orders() {
-  useSEO("My Orders — iUnlockd", "View and track all your unlock service orders.");
+  useSEO("My Orders — iUnlockd", "View and track all your unlock service orders.", {
+    robots: "noindex, nofollow",
+  });
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

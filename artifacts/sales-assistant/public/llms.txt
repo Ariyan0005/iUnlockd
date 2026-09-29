@@ -1,0 +1,22 @@
+# iUnlockd
+
+> iUnlockd is a device-service marketplace for IMEI checks, phone unlock services, server software, technician tools, credits, and short-term tool rentals.
+
+## Primary resources
+
+- [Home](https://iunlockd.com/): Overview of iUnlockd's public services.
+- [IMEI services](https://iunlockd.com/imei-services): Browse IMEI, serial, network, MDM, FRP, and related device services.
+- [Server services](https://iunlockd.com/server-services): Browse software access, licenses, renewals, and server-based products.
+- [Tool activation and credits](https://iunlockd.com/tool-activation-credits): Browse technician tool activations, subscriptions, and credit packs.
+- [Tool rentals](https://iunlockd.com/tool-rent): Browse temporary technician tool access.
+- [IMEI checker](https://iunlockd.com/imei-checker): Start a device-status check before selecting a service.
+- [Device check directory](https://iunlockd.com/iphone-imei-check): Public device-check routes for iPhone, Apple, Samsung, Xiaomi, Google Pixel, carrier, blacklist, and FMI checks.
+- [Parts compatibility guides](https://iunlockd.com/parts-compatibility/display-compatibility): Public repair and parts compatibility references.
+- [Business ERP](https://iunlockd.com/erp-for-business): Information about the iUnlockd workspace for device-service businesses.
+- [Contact](https://iunlockd.com/contact): Support contact channels.
+
+## Usage notes
+
+- Public service detail URLs use the `/imei-services/{slug}` or `/services/{slug}` patterns and are listed in the service sitemap.
+- Account, payment, order, and admin routes require authentication and are not public documentation.
+- Service availability, pricing, processing times, and required fields are authoritative only when returned by the live service catalog.

@@ -4,6 +4,8 @@ export interface SEOOptions {
   canonicalUrl?: string;
   ogType?: string;
   ogImage?: string;
+  robots?: string;
+  jsonLd?: Record<string, unknown>;
 }
 
 function setMeta(selector: string, attributes: Record<string, string>) {
@@ -16,16 +18,60 @@ function setMeta(selector: string, attributes: Record<string, string>) {
 }
 
 export function useSEO(title: string, description?: string, options: SEOOptions = {}) {
+  const jsonLdText = options.jsonLd ? JSON.stringify(options.jsonLd) : "";
+
   useEffect(() => {
     document.title = title;
-    if (description) setMeta('meta[name="description"]', { name: "description", content: description });
+    if (description !== undefined) {
+      setMeta('meta[name="description"]', { name: "description", content: description });
+    }
     setMeta('meta[property="og:title"]', { property: "og:title", content: title });
-    if (description) setMeta('meta[property="og:description"]', { property: "og:description", content: description });
+    if (description !== undefined) {
+      setMeta('meta[property="og:description"]', { property: "og:description", content: description });
+    }
     setMeta('meta[property="og:type"]', { property: "og:type", content: options.ogType ?? "website" });
 
-    const canonical = new URL(options.canonicalUrl ?? window.location.pathname, window.location.origin).toString();
+    const canonical = new URL(
+      options.canonicalUrl ?? window.location.pathname,
+      window.location.origin,
+    ).toString();
     setMeta('meta[property="og:url"]', { property: "og:url", content: canonical });
-    if (options.ogImage) setMeta('meta[property="og:image"]', { property: "og:image", content: options.ogImage });
+    setMeta('meta[property="og:image"]', {
+      property: "og:image",
+      content: options.ogImage ?? new URL("/opengraph.jpg", window.location.origin).toString(),
+    });
+    setMeta('meta[name="twitter:card"]', { name: "twitter:card", content: "summary_large_image" });
+    setMeta('meta[name="twitter:title"]', { name: "twitter:title", content: title });
+    if (description !== undefined) {
+      setMeta('meta[name="twitter:description"]', {
+        name: "twitter:description",
+        content: description,
+      });
+    }
+    setMeta('meta[name="twitter:image"]', {
+      name: "twitter:image",
+      content: options.ogImage ?? new URL("/opengraph.jpg", window.location.origin).toString(),
+    });
+    setMeta('meta[name="robots"]', {
+      name: "robots",
+      content: options.robots ?? "index, follow",
+    });
+
+    const existingStructuredData = document.head.querySelector(
+      'script[data-seo-jsonld="true"]',
+    );
+    if (jsonLdText) {
+      const structuredData =
+        existingStructuredData instanceof HTMLScriptElement
+          ? existingStructuredData
+          : document.createElement("script");
+      structuredData.type = "application/ld+json";
+      structuredData.dataset.seoJsonld = "true";
+      structuredData.textContent = jsonLdText;
+      if (!existingStructuredData) document.head.appendChild(structuredData);
+    } else {
+      existingStructuredData?.remove();
+    }
 
     let canonicalLink = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonicalLink) {
@@ -34,5 +80,13 @@ export function useSEO(title: string, description?: string, options: SEOOptions 
       document.head.appendChild(canonicalLink);
     }
     canonicalLink.href = canonical;
-  }, [title, description, options.canonicalUrl, options.ogImage, options.ogType]);
+  }, [
+    title,
+    description,
+    options.canonicalUrl,
+    options.ogImage,
+    options.ogType,
+    options.robots,
+    jsonLdText,
+  ]);
 }

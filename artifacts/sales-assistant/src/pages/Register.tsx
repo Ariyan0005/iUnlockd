@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useLang, LANGUAGES } from "@/lib/i18n";
 import { useSEO } from "@/lib/seo";
+import { loadTurnstile } from "@/lib/turnstile";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, CheckCircle2, XCircle, Loader2, Globe, ChevronDown } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -104,7 +105,9 @@ const Header = ({ showLangMenu, setShowLangMenu, currentLang, setLang, LANGUAGES
 );
 
 export default function Register() {
-  useSEO("Create Account — iUnlockd", "Create a free iUnlockd account and start unlocking your devices today. No subscription required.");
+  useSEO("Create Account — iUnlockd", "Create a free iUnlockd account and start unlocking your devices today. No subscription required.", {
+    robots: "noindex, nofollow",
+  });
   const nav = useNavigate();
   const { t, setLang, currentLang } = useLang();
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -144,9 +147,10 @@ export default function Register() {
       );
   },[]);
 
-  useEffect(()=>{
+  useEffect(() => {
     if(step!==2) return;
-    const go=()=>{
+    let cancelled = false;
+    const go = () => {
       if(!tsRef.current||tsId.current!==null||!window.turnstile) return;
       tsId.current=window.turnstile.render(tsRef.current,{
         sitekey:TS_KEY,theme:"light",
@@ -155,10 +159,21 @@ export default function Register() {
         "error-callback":()=>setCaptcha(""),
       });
     };
-    if(window.turnstile) go();
-    else{const p=setInterval(()=>{if(window.turnstile){clearInterval(p);go();}},150);return()=>clearInterval(p);}
-    return()=>{if(window.turnstile&&tsId.current!==null){try{window.turnstile.remove(tsId.current);}catch{}tsId.current=null;setCaptcha("");}};
-  },[step]);
+    void loadTurnstile().then(() => {
+      if (!cancelled) go();
+    }).catch(() => {
+      if (!cancelled) setErr("Security check could not load. Please refresh and try again.");
+    });
+
+    return () => {
+      cancelled = true;
+      if(window.turnstile&&tsId.current!==null){
+        try { window.turnstile.remove(tsId.current); } catch {}
+        tsId.current = null;
+        setCaptcha("");
+      }
+    };
+  }, [step]);
 
   useEffect(()=>{
     const ok=/\S+@\S+\.\S+/.test(email);

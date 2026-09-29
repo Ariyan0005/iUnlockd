@@ -15,7 +15,9 @@ interface PasskeyItem {
 }
 
 export default function Account() {
-  useSEO("My Account — iUnlockd", "Manage your iUnlockd profile, password and account settings.");
+  useSEO("My Account — iUnlockd", "Manage your iUnlockd profile, password and account settings.", {
+    robots: "noindex, nofollow",
+  });
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 

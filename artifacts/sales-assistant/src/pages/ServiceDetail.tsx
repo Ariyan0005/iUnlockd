@@ -71,7 +71,26 @@ export default function ServiceDetail() {
   useSEO(
     service ? `${service.name} | iUnlockd` : "Service details | iUnlockd",
     seoDescription,
-    { canonicalUrl: canonicalServicePath },
+    {
+      canonicalUrl: canonicalServicePath,
+      ogType: "product",
+      jsonLd: service
+        ? {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: service.name,
+            description: seoDescription,
+            url: new URL(canonicalServicePath, window.location.origin).toString(),
+            offers: {
+              "@type": "Offer",
+              priceCurrency: "USD",
+              price: Number.parseFloat(service.price) || 0,
+              availability: "https://schema.org/InStock",
+              url: new URL(canonicalServicePath, window.location.origin).toString(),
+            },
+          }
+        : undefined,
+    },
   );
 
   useEffect(() => {

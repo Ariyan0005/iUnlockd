@@ -213,7 +213,18 @@ export default function DeviceCheckPage({ fixedSlug }: { fixedSlug?: string }) {
   const [loading, setLoading] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  useSEO(config.seoTitle, config.description);
+  useSEO(config.seoTitle, config.description, {
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: config.title,
+      applicationCategory: "UtilitiesApplication",
+      operatingSystem: "Web",
+      description: config.description,
+      url: new URL(window.location.pathname, window.location.origin).toString(),
+      provider: { "@type": "Organization", name: "iUnlockd" },
+    },
+  });
 
   const relatedChecks = useMemo(
     () => config.related.map((relatedSlug) => ({ slug: relatedSlug, label: CHECK_PAGE_CONFIG[relatedSlug]?.title ?? relatedSlug })),

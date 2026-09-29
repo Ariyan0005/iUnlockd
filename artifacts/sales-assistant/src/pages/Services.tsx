@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSEO } from "@/lib/seo";
 import { getServicePath } from "@/lib/serviceUrl";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,6 @@ export default function Services() {
     "Unlock Services & Digital Products | iUnlockd",
     "Browse all active IMEI, server, remote, and digital services available from iUnlockd.",
   );
-  const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -107,9 +106,9 @@ export default function Services() {
               <Card
                 key={service.slug}
                 className="border-border hover:border-primary/40 cursor-pointer transition-all hover:shadow-md group"
-                onClick={() => navigate(getServicePath(service.serviceType, service.slug))}
               >
-                <CardContent className="p-5 flex flex-col gap-3">
+                <Link to={getServicePath(service.serviceType, service.slug)} className="block group" aria-label={`View ${service.name}`}>
+                  <CardContent className="p-5 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors">
                       {service.name}
@@ -133,7 +132,8 @@ export default function Services() {
                       <ArrowRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                   </div>
-                </CardContent>
+                  </CardContent>
+                </Link>
               </Card>
             ))}
           </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSEO } from "@/lib/seo";
 import { getServicePath } from "@/lib/serviceUrl";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,6 @@ export default function IMEIServices() {
     "IMEI & Serial Unlock Services | iUnlockd",
     "Phone unlock services using IMEI or serial number, including MDM unlock, iCloud bypass, FRP unlock, and network unlock."
   );
-  const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [filtered, setFiltered] = useState<Service[]>([]);
   const [search, setSearch] = useState("");
@@ -106,7 +105,7 @@ export default function IMEIServices() {
             {filtered
               .filter((s) => s.category === cat)
               .map((service) => (
-                <ServiceCard key={service.slug} service={service} onSelect={() => navigate(getServicePath(service.serviceType, service.slug))} />
+                <ServiceCard key={service.slug} service={service} href={getServicePath(service.serviceType, service.slug)} />
               ))}
           </div>
         </div>
@@ -115,7 +114,7 @@ export default function IMEIServices() {
       {!loading && !error && categories.length === 0 && filtered.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((service) => (
-            <ServiceCard key={service.slug} service={service} onSelect={() => navigate(getServicePath(service.serviceType, service.slug))} />
+            <ServiceCard key={service.slug} service={service} href={getServicePath(service.serviceType, service.slug)} />
           ))}
         </div>
       )}
@@ -123,13 +122,11 @@ export default function IMEIServices() {
   );
 }
 
-function ServiceCard({ service, onSelect }: { service: Service; onSelect: () => void }) {
+function ServiceCard({ service, href }: { service: Service; href: string }) {
   return (
-    <Card
-      className="border-border hover:border-primary/40 cursor-pointer transition-all hover:shadow-md group"
-      onClick={onSelect}
-    >
-      <CardContent className="p-5 flex flex-col gap-3">
+    <Link to={href} className="block group" aria-label={`View ${service.name}`}>
+      <Card className="h-full border-border transition-all group-hover:border-primary/40 group-hover:shadow-md">
+        <CardContent className="p-5 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors">
             {service.name}
@@ -155,7 +152,8 @@ function ServiceCard({ service, onSelect }: { service: Service; onSelect: () => 
             <ArrowRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
           </div>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

@@ -1,8 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
+import { useSEO } from "@/lib/seo";
 
 export default function NotFound() {
+  useSEO("Page Not Found — iUnlockd", "The iUnlockd page you requested could not be found.", {
+    robots: "noindex, nofollow",
+  });
   const navigate = useNavigate();
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center gap-6">

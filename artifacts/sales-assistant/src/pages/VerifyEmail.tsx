@@ -2,8 +2,12 @@ import { useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import Logo from "@/components/Logo";
+import { useSEO } from "@/lib/seo";
 
 export default function VerifyEmail() {
+  useSEO("Verify Your Email — iUnlockd", "Verify your iUnlockd account email address.", {
+    robots: "noindex, nofollow",
+  });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();

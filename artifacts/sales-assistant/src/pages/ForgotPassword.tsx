@@ -2,10 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
+import { useSEO } from "@/lib/seo";
 
 type Step = "email" | "reset";
 
 export default function ForgotPassword() {
+  useSEO("Reset Your Password — iUnlockd", "Reset access to your iUnlockd account.", {
+    robots: "noindex, nofollow",
+  });
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
