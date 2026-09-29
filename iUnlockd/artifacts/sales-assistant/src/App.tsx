@@ -1,42 +1,42 @@
-import { type ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { ThemeProvider } from "@/lib/theme";
-import Layout from "@/components/Layout";
 import { Loader2 } from "lucide-react";
 
-import Home from "@/pages/Home";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import VerifyEmail from "@/pages/VerifyEmail";
-import Dashboard from "@/pages/Dashboard";
-import IMEIServices from "@/pages/IMEIServices";
-import IMEIChecker from "@/pages/IMEIChecker";
-import ServerServices from "@/pages/ServerServices";
-import ServiceDetail from "@/pages/ServiceDetail";
-import AddFund from "@/pages/AddFund";
-import Deposit from "@/pages/Deposit";
-import MyDeposits from "@/pages/MyDeposits";
-import Orders from "@/pages/Orders";
-import Account from "@/pages/Account";
-import Admin from "@/pages/Admin";
-import AdminSetup from "@/pages/AdminSetup";
-import ManualPayment from "@/pages/ManualPayment";
-import ForgotPassword from "@/pages/ForgotPassword";
-import ToolRent from "@/pages/ToolRent";
-import ToolActivationCredits from "@/pages/ToolActivationCredits";
-import Services from "@/pages/Services";
-import Statement from "@/pages/Statement";
-import Invoices from "@/pages/Invoices";
-import Contact from "@/pages/Contact";
-import Terms from "@/pages/Terms";
-import Privacy from "@/pages/Privacy";
-import NotFound from "@/pages/not-found";
-import DeviceCheckPage from "@/pages/DeviceCheckPage";
-import AdminCheckApis from "@/pages/AdminCheckApis";
+const Layout = lazy(() => import("@/components/Layout"));
+const Home = lazy(() => import("@/pages/Home"));
+const Login = lazy(() => import("@/pages/Login"));
+const Register = lazy(() => import("@/pages/Register"));
+const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const IMEIServices = lazy(() => import("@/pages/IMEIServices"));
+const IMEIChecker = lazy(() => import("@/pages/IMEIChecker"));
+const ServerServices = lazy(() => import("@/pages/ServerServices"));
+const ServiceDetail = lazy(() => import("@/pages/ServiceDetail"));
+const AddFund = lazy(() => import("@/pages/AddFund"));
+const Deposit = lazy(() => import("@/pages/Deposit"));
+const MyDeposits = lazy(() => import("@/pages/MyDeposits"));
+const Orders = lazy(() => import("@/pages/Orders"));
+const Account = lazy(() => import("@/pages/Account"));
+const Admin = lazy(() => import("@/pages/Admin"));
+const AdminSetup = lazy(() => import("@/pages/AdminSetup"));
+const ManualPayment = lazy(() => import("@/pages/ManualPayment"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const ToolRent = lazy(() => import("@/pages/ToolRent"));
+const ToolActivationCredits = lazy(() => import("@/pages/ToolActivationCredits"));
+const Services = lazy(() => import("@/pages/Services"));
+const Statement = lazy(() => import("@/pages/Statement"));
+const Invoices = lazy(() => import("@/pages/Invoices"));
+const Contact = lazy(() => import("@/pages/Contact"));
+const Terms = lazy(() => import("@/pages/Terms"));
+const Privacy = lazy(() => import("@/pages/Privacy"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const DeviceCheckPage = lazy(() => import("@/pages/DeviceCheckPage"));
+const AdminCheckApis = lazy(() => import("@/pages/AdminCheckApis"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,7 +78,8 @@ function AppRoutes() {
 
   return (
     <BrowserRouter basename={base}>
-      <Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
         {/* Auth pages */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -139,7 +140,8 @@ function AppRoutes() {
             </Layout>
           }
         />
-      </Routes>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

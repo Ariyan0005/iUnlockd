@@ -141,7 +141,7 @@ export default function Home() {
                 <span>Welcome back, <strong className="text-slate-950">{user.name}</strong>. Balance: <strong className="text-blue-700">${parseFloat(user.balance).toFixed(2)}</strong></span>
               </div>
             ) : (
-              <p className="mt-7 flex items-center gap-2 text-sm font-medium text-slate-500">
+              <p className="mt-7 flex items-center gap-2 text-sm font-medium text-slate-700">
                 <LockKeyhole className="h-4 w-4 text-blue-600" />
                 Secure account workspace for every order
               </p>
@@ -192,8 +192,8 @@ export default function Home() {
 
       <section className="border-y border-blue-100/80 bg-blue-50/55 px-4 py-5">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 text-sm">
-          <p className="font-medium text-slate-700">Built for the people behind every successful device handoff.</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-slate-500">
+          <p className="font-medium text-slate-800">Built for the people behind every successful device handoff.</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-slate-700">
             <span className="inline-flex items-center gap-2"><Wrench className="h-4 w-4 text-blue-600" /> Technicians</span>
             <span className="inline-flex items-center gap-2"><Globe2 className="h-4 w-4 text-blue-600" /> Resellers</span>
             <span className="inline-flex items-center gap-2"><Smartphone className="h-4 w-4 text-blue-600" /> Device owners</span>
@@ -221,11 +221,11 @@ export default function Home() {
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
                       <Icon className="h-6 w-6" />
                     </div>
-                    <span className="font-mono text-xs font-semibold tracking-[.2em] text-slate-400">{service.index}</span>
+                  <span className="font-mono text-xs font-semibold tracking-[.2em] text-slate-600">{service.index}</span>
                   </div>
                   <p className="mt-8 text-xs font-bold uppercase tracking-[.17em] text-blue-700">{service.label}</p>
                   <h3 className="mt-3 font-display text-2xl font-semibold tracking-[-.025em] text-slate-950">{service.title}</h3>
-                  <p className="mt-3 min-h-[4.5rem] text-sm leading-6 text-slate-600">{service.description}</p>
+                  <p className="mt-3 min-h-[4.5rem] text-sm leading-6 text-slate-700">{service.description}</p>
                   <span className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-slate-950">
                     {service.action}<ChevronRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-1" />
                   </span>
