@@ -31,7 +31,12 @@ export default function ServerServices() {
 
   useEffect(() => {
     fetch("/api/services?type=server")
-      .then((r) => r.json())
+      .then(async (response) => {
+        if (!response.ok || !(response.headers.get("content-type") ?? "").includes("application/json")) {
+          throw new Error("Failed to load services");
+        }
+        return response.json();
+      })
       .then((data) => {
         const list = Array.isArray(data) ? data : data.services ?? [];
         setServices(list);

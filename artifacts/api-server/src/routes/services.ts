@@ -7,7 +7,23 @@ import { slugifyServiceName } from "../modules/services/slug";
 import { backfillMissingServiceSlugs } from "../modules/services/backfillSlugs";
 
 const router = Router();
-const PUBLIC_SITE_ORIGIN = "https://iunlockd.com";
+const PUBLIC_SITE_ORIGIN = (process.env.PUBLIC_SITE_ORIGIN ?? "https://iunlockd.com").replace(/\/+$/, "");
+
+function escapeXml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function setPublicCacheHeaders(res: { set: (field: string, value: string) => unknown }) {
+  res.set(
+    "Cache-Control",
+    "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+  );
+}
 
 function publicService(service: {
   id: number;
@@ -84,6 +100,7 @@ router.get("/", async (req, res) => {
             )
       );
 
+    setPublicCacheHeaders(res);
     res.json(rows.map(publicService));
   } catch (err) {
     req.log.error({ err }, "Get services error");
@@ -110,10 +127,12 @@ router.get("/sitemap.xml", async (req, res) => {
       .filter((service): service is { slug: string; serviceType: string } => Boolean(service.slug?.trim()))
       .map((service) => {
         const path = service.serviceType === "imei" ? "/imei-services" : "/services";
-        return `  <url><loc>${PUBLIC_SITE_ORIGIN}${path}/${encodeURIComponent(service.slug)}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+        const location = `${PUBLIC_SITE_ORIGIN}${path}/${encodeURIComponent(service.slug)}`;
+        return `  <url><loc>${escapeXml(location)}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
       })
       .join("\n");
 
+    setPublicCacheHeaders(res);
     res
       .type("application/xml")
       .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`);

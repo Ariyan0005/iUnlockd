@@ -17,6 +17,10 @@ function setMeta(selector: string, attributes: Record<string, string>) {
   Object.entries(attributes).forEach(([key, value]) => element?.setAttribute(key, value));
 }
 
+function absoluteUrl(pathOrUrl: string) {
+  return new URL(pathOrUrl, window.location.origin).toString();
+}
+
 export function useSEO(title: string, description?: string, options: SEOOptions = {}) {
   const jsonLdText = options.jsonLd ? JSON.stringify(options.jsonLd) : "";
 
@@ -31,14 +35,12 @@ export function useSEO(title: string, description?: string, options: SEOOptions 
     }
     setMeta('meta[property="og:type"]', { property: "og:type", content: options.ogType ?? "website" });
 
-    const canonical = new URL(
-      options.canonicalUrl ?? window.location.pathname,
-      window.location.origin,
-    ).toString();
+    const canonical = absoluteUrl(options.canonicalUrl ?? window.location.pathname);
     setMeta('meta[property="og:url"]', { property: "og:url", content: canonical });
+    setMeta('meta[property="og:site_name"]', { property: "og:site_name", content: "iUnlockd" });
     setMeta('meta[property="og:image"]', {
       property: "og:image",
-      content: options.ogImage ?? new URL("/opengraph.jpg", window.location.origin).toString(),
+      content: absoluteUrl(options.ogImage ?? "/opengraph.jpg"),
     });
     setMeta('meta[name="twitter:card"]', { name: "twitter:card", content: "summary_large_image" });
     setMeta('meta[name="twitter:title"]', { name: "twitter:title", content: title });
@@ -50,7 +52,7 @@ export function useSEO(title: string, description?: string, options: SEOOptions 
     }
     setMeta('meta[name="twitter:image"]', {
       name: "twitter:image",
-      content: options.ogImage ?? new URL("/opengraph.jpg", window.location.origin).toString(),
+      content: absoluteUrl(options.ogImage ?? "/opengraph.jpg"),
     });
     setMeta('meta[name="robots"]', {
       name: "robots",

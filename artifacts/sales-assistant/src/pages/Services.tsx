@@ -30,7 +30,9 @@ export default function Services() {
   useEffect(() => {
     fetch("/api/services")
       .then((response) => {
-        if (!response.ok) throw new Error("Failed to load services");
+        if (!response.ok || !(response.headers.get("content-type") ?? "").includes("application/json")) {
+          throw new Error("Failed to load services");
+        }
         return response.json();
       })
       .then((data) => setServices(Array.isArray(data) ? data : data.services ?? []))

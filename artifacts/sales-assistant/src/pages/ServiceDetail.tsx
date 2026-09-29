@@ -46,6 +46,19 @@ function displayFieldLabel(field: OrderField) {
   return field.label?.trim() || field.name.replace(/[-_]/g, " ");
 }
 
+async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("The service catalog is temporarily unavailable. Please try again.");
+  }
+
+  const data: unknown = await response.json();
+  if (!data || typeof data !== "object") {
+    throw new Error("The service catalog returned an invalid response. Please try again.");
+  }
+  return data as Record<string, unknown>;
+}
+
 export default function ServiceDetail() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
@@ -101,8 +114,10 @@ export default function ServiceDetail() {
       setError("");
       try {
         const response = await fetch(`/api/services/slug/${encodeURIComponent(slug ?? "")}`);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error ?? "Service not found");
+        const data = await readJsonResponse(response);
+        if (!response.ok) {
+          throw new Error(typeof data.error === "string" ? data.error : "Service not found");
+        }
         const nextService = (data.service ?? data) as Service;
         if (!nextService.slug?.trim()) throw new Error("This service does not have a public URL yet.");
         if (!cancelled) {
