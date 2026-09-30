@@ -5,7 +5,6 @@ import {
   ArrowRight,
   CheckCircle2,
   CircleHelp,
-  Clock3,
   ExternalLink,
   FileSearch,
   Hash,
@@ -124,7 +123,7 @@ export const CHECK_PAGE_CONFIG: Record<string, CheckPageConfig> = {
     eyebrow: "Verify a Galaxy before you buy",
     seoTitle: "Samsung IMEI Check Online for Device Details | iUnlockd",
     description: "Check a Samsung phone's IMEI before buying, selling, or servicing it. See device details returned by iUnlockd's configured lookup provider.",
-    intro: "Enter a Samsung IMEI for a server-side request for the device and network information your provider supports.",
+    intro: "Enter a Samsung IMEI to request the device and network information your provider supports.",
     inputLabel: "Samsung IMEI",
     placeholder: "Enter a 14 or 15 digit Samsung IMEI",
     identifierHint: "Dial *#06# on the phone to display its IMEI.",
@@ -150,7 +149,7 @@ export const CHECK_PAGE_CONFIG: Record<string, CheckPageConfig> = {
     eyebrow: "Make the next Pixel purchase with confidence",
     seoTitle: "Google Pixel IMEI Check Online for Device Status | iUnlockd",
     description: "Check Google Pixel device details with an IMEI lookup. iUnlockd sends your request to its configured provider and shows returned data.",
-    intro: "Enter a Google Pixel IMEI for a secure request to the provider configured for this route.",
+    intro: "Enter a Google Pixel IMEI to request the device information available from the provider configured for this check.",
     inputLabel: "Google Pixel IMEI",
     placeholder: "Enter a 14 or 15 digit Pixel IMEI",
     identifierHint: "Most Pixel IMEI numbers contain 15 digits.",
@@ -306,9 +305,8 @@ export default function DeviceCheckPage({ fixedSlug }: { fixedSlug?: string }) {
 
           <div className="mx-auto mt-8 max-w-3xl rounded-[1.65rem] border border-white/15 bg-white/[0.085] p-2 shadow-2xl shadow-slate-950/20 backdrop-blur-xl">
             <form onSubmit={submit} className="rounded-2xl bg-[#f4f8f9] p-4 text-foreground sm:p-5" data-testid={`form-check-${slug}`}>
-              <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="mb-4 flex items-center gap-3">
                 <label htmlFor="device-identifier" className="text-sm font-bold">{config.inputLabel}</label>
-                <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-cyan-800">Secure request</span>
               </div>
               <div className="relative">
                 <Hash className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-700" />
@@ -336,10 +334,6 @@ export default function DeviceCheckPage({ fixedSlug }: { fixedSlug?: string }) {
           </div>
 
           <p className="mx-auto mt-5 max-w-3xl text-center text-[15px] leading-7 text-slate-300 sm:text-lg">{config.intro}</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-medium text-slate-300">
-            <span className="inline-flex items-center gap-1.5"><LockKeyhole className="h-3.5 w-3.5 text-cyan-300" /> Provider keys stay server-side</span>
-            <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-cyan-300" /> One request, one clear response</span>
-          </div>
         </div>
       </section>
 
@@ -352,7 +346,7 @@ export default function DeviceCheckPage({ fixedSlug }: { fixedSlug?: string }) {
               <div className="rounded-xl bg-cyan-100 p-2.5 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300"><LockKeyhole className="h-5 w-5" /></div>
               <div>
                 <h2 className="font-display text-xl font-bold">A lookup, not a guess</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Your identifier is sent to iUnlockd's server. The provider key stays server-side. If the route is not configured or the provider fails, you see that state clearly instead of receiving a made-up clean, locked, or covered status.</p>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">If the provider does not support this check or returns an error, the page will show that clearly instead of guessing a clean, locked, or covered status.</p>
               </div>
             </div>
           </section>
