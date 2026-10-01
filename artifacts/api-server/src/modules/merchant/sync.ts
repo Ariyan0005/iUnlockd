@@ -5,6 +5,7 @@ import { logger } from "../../lib/logger";
 import { resolveIdentifierType } from "../services/orderConfig";
 import { fieldNameMatches, normalizeMerchantFields } from "./fieldSchema";
 import { uniqueServiceSlug } from "../services/slug";
+import { requestDhruProducts } from "./dhru";
 
 interface MerchantService {
   id?: string | number;
@@ -314,18 +315,14 @@ export async function fetchMerchantServiceList(
   apiUser: string | null,
   apiFormat: string,
 ): Promise<MerchantService[]> {
+  if (apiFormat === "dhru") {
+    const result = await requestDhruProducts(base, apiKey, apiUser);
+    return normalizeMerchantServiceList(result.products);
+  }
+
   let res: Response;
 
-  if (apiFormat === "dhru") {
-    res = await fetch(`${base}/api/reseller/v1/products`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0",
-      },
-    });
-  } else if (apiFormat === "form") {
+  if (apiFormat === "form") {
     const params = new URLSearchParams({ key: apiKey, action: "services" });
     if (apiUser && apiUser.trim()) params.set("username", apiUser.trim());
     res = await fetch(base, {

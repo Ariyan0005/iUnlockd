@@ -5,6 +5,7 @@ import { users, orders, services, cryptoDeposits, settings, merchants } from "@w
 import { eq, desc, sql, count, notInArray } from "drizzle-orm";
 import { authenticate, requireAdmin, type AuthRequest } from "../middleware/authenticate";
 import { syncMerchantProducts, buildMerchantHeaders, normalizeMerchantServiceList } from "../modules/merchant/sync";
+import { DhruProductsError, requestDhruProducts } from "../modules/merchant/dhru";
 import { checkMerchantOrderStatus } from "../modules/merchant/order";
 import { resolveIdentifierType } from "../modules/services/orderConfig";
 import { slugifyServiceName, uniqueServiceSlug } from "../modules/services/slug";
@@ -567,15 +568,14 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10000);
-      let testRes: Response;
+      let testRes: Response | undefined;
       try {
         if (apiFormat === "dhru") {
           testedEndpoint = `${base}/api/reseller/v1/products`;
-          testRes = await fetch(testedEndpoint, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${merchant.apiKey}`, "Accept": "application/json", "User-Agent": "Mozilla/5.0" },
-            signal: ctrl.signal,
-          });
+          const result = await requestDhruProducts(base, merchant.apiKey, merchant.apiUser, ctrl.signal);
+          httpStatus = result.httpStatus;
+          serviceCount = normalizeMerchantServiceList(result.products).length;
+          ok = true;
         } else if (apiFormat === "form") {
           const params = new URLSearchParams({ key: merchant.apiKey, action: "services" });
           if (merchant.apiUser?.trim()) params.set("username", merchant.apiUser.trim());
@@ -594,27 +594,33 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
       } finally {
         clearTimeout(timer);
       }
-      httpStatus = testRes.status;
-      const responseBody = await testRes.text().catch(() => "");
 
-      if (testRes.ok) {
-        try {
-          const parsed = JSON.parse(responseBody) as unknown;
-          serviceCount = normalizeMerchantServiceList(parsed).length;
-          ok = true;
-        } catch {
-          if (responseBody.includes('<html') || responseBody.includes('cloudflare') || responseBody.includes('gorizontal')) {
-            ok = false;
-            errorMsg = 'Cloudflare challenge blocked — IP not whitelisted at Cloudflare level (HTTP ' + String(httpStatus) + ')';
-          } else {
+      if (testRes) {
+        httpStatus = testRes.status;
+        const responseBody = await testRes.text().catch(() => "");
+
+        if (testRes.ok) {
+          try {
+            const parsed = JSON.parse(responseBody) as unknown;
+            serviceCount = normalizeMerchantServiceList(parsed).length;
             ok = true;
-            serviceCount = 0;
+          } catch {
+            if (responseBody.includes('<html') || responseBody.includes('cloudflare') || responseBody.includes('gorizontal')) {
+              ok = false;
+              errorMsg = 'Cloudflare challenge blocked — IP not whitelisted at Cloudflare level (HTTP ' + String(httpStatus) + ')';
+            } else {
+              ok = true;
+              serviceCount = 0;
+            }
           }
+        } else {
+          errorMsg = `HTTP ${httpStatus}: ${responseBody.slice(0, 200)}`;
         }
-      } else {
-        errorMsg = `HTTP ${httpStatus}: ${responseBody.slice(0, 200)}`;
       }
     } catch (fetchErr) {
+      if (fetchErr instanceof DhruProductsError && fetchErr.httpStatus !== undefined) {
+        httpStatus = fetchErr.httpStatus;
+      }
       errorMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
       if (errorMsg.includes("ENOTFOUND") || errorMsg.includes("ECONNREFUSED")) {
         errorMsg = `Cannot reach ${base} — check URL`;
