@@ -108,6 +108,38 @@ function responseStatus(parsed: unknown): string | undefined {
   return textValue(readTag(rootRecord, ["status", "response_status"]));
 }
 
+function findMessage(value: unknown): string | undefined {
+  const record = asRecord(value);
+  if (!record) return textValue(value);
+
+  const directMessage = readTag(record, ["message", "error_message", "description"]);
+  if (directMessage !== undefined) {
+    const message = findMessage(directMessage);
+    if (message) return message;
+  }
+
+  for (const child of Object.values(record)) {
+    const message = findMessage(child);
+    if (message) return message;
+  }
+
+  return undefined;
+}
+
+function responseError(parsed: unknown): string | undefined {
+  const document = asRecord(parsed);
+  if (!document) return undefined;
+
+  const rootEntry = Object.entries(document).find(([key]) => !key.startsWith("?"));
+  const root = asRecord(rootEntry?.[1]) ?? document;
+  const error = normalizedTagName(rootEntry?.[0] ?? "") === "error"
+    ? rootEntry?.[1]
+    : readTag(root, ["error", "errors"]);
+  if (error === undefined) return undefined;
+
+  return findMessage(error) ?? "Provider returned an unspecified error";
+}
+
 function rootTagName(parsed: unknown): string | undefined {
   const record = asRecord(parsed);
   if (!record) return undefined;
@@ -132,6 +164,11 @@ export function parseDhruProducts(xml: string): Record<string, unknown>[] {
     throw new DhruProductsError("Dhru returned HTML instead of XML");
   }
 
+  const providerError = responseError(parsed);
+  if (providerError) {
+    throw new DhruProductsError(`Dhru rejected the product request: ${providerError}`);
+  }
+
   const status = responseStatus(parsed)?.toLowerCase();
   if (status && !["4", "success", "ok", "true"].includes(status)) {
     throw new DhruProductsError(`Dhru rejected the product request (status ${status})`);
@@ -148,7 +185,7 @@ export async function requestDhruProducts(
 ): Promise<DhruProductsResult> {
   const endpoint = `${base.replace(/\/+$/, "")}/api/reseller/v1/products`;
   const body = new URLSearchParams({
-    key: apiKey,
+    apiaccesskey: apiKey,
     username: apiUser ?? "",
     action: "product",
   });

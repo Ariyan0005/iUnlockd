@@ -43,11 +43,21 @@ const legitUnlocksResponseXml = `<?xml version="1.0" encoding="UTF-8"?>
   </SUCCESS>
 </DHRUFUSION_COMPATIBILITY>`;
 
+const legitUnlocksErrorXml = `<?xml version="1.0" encoding="UTF-8"?>
+<DHRUFUSION_COMPATIBILITY Version="8.1">
+  <ERROR>
+    <RESULT>
+      <MESSAGE>The API access key field is required</MESSAGE>
+    </RESULT>
+  </ERROR>
+</DHRUFUSION_COMPATIBILITY>`;
+
 const legitUnlocksProducts = parseDhruProducts(legitUnlocksResponseXml);
 assert.equal(legitUnlocksProducts.length, 1);
 assert.equal(legitUnlocksProducts[0]?.["id"], "2949");
 assert.equal(legitUnlocksProducts[0]?.["name"], "186# LU iPad Fixer");
 assert.equal(legitUnlocksProducts[0]?.["price"], 2);
+assert.throws(() => parseDhruProducts(legitUnlocksErrorXml), /API access key field is required/);
 
 const products = parseDhruProducts(responseXml);
 assert.equal(products.length, 2);
@@ -90,7 +100,7 @@ async function verifyDhruRequest() {
     assert.equal(headers.get("authorization"), null);
     assert.deepEqual(
       Object.fromEntries(new URLSearchParams(String(requestInit?.body))),
-      { key: "key with & symbol", username: "merchant user", action: "product" },
+      { apiaccesskey: "key with & symbol", username: "merchant user", action: "product" },
     );
     assert.equal(result.products.length, 2);
     assert.equal(result.httpStatus, 200);

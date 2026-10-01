@@ -650,7 +650,7 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
     }
 
     const authMode = apiFormat === "legitunlock"
-      ? "LegitUnlocks Dhru XML (POST form: key + username, action=product)"
+      ? "LegitUnlocks Dhru XML (POST form: apiaccesskey + username, action=product)"
       : apiFormat === "dhru"
         ? "GSM Africa REST (GET + Bearer token)"
         : apiFormat === "form"

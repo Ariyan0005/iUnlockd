@@ -1212,7 +1212,7 @@ export default function Admin() {
                   {merchantForm.apiFormat === "form"
                     ? "SMM panels — POST key and action=services to the configured endpoint"
                     : merchantForm.apiFormat === "legitunlock"
-                      ? "POSTs key, username, and action=product to /api/reseller/v1/products; product listing is supported."
+                      ? "POSTs apiaccesskey, username, and action=product to /api/reseller/v1/products; product listing is supported."
                       : merchantForm.apiFormat === "dhru"
                         ? "GSM Africa — GET /api/reseller/v1/products with a Bearer token."
                         : "Modern REST APIs — GET /services with an Authorization header."}
