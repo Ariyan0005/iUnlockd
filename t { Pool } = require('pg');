@@ -1,0 +1,6 @@
+ id |     name     | api_format |          key_preview           |           api_endpoint           
+----+--------------+------------+--------------------------------+----------------------------------
+  1 | Gsm Africa   | rest       | 61736cc5-f861-40b0-b385-947a9a | https://api.gsmafrica.com
+  2 | Legitunlocks | form       | 3Q1-VUZ-SHW-BTP-L64-ATE-2AT-KH | https://www.legitunlocks.com/api
+(2 rows)
+

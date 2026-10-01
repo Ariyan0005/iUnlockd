@@ -1,0 +1,47 @@
+{
+  "specVersion": "1.0",
+  "entries": [
+    {
+      "identifier": "urn:air:iunlockd.com:web:home",
+      "displayName": "iUnlockd public website",
+      "type": "text/html",
+      "description": "Public overview of IMEI checks, device unlock services, server services, and technician tools.",
+      "url": "https://iunlockd.com/"
+    },
+    {
+      "identifier": "urn:air:iunlockd.com:web:imei-services",
+      "displayName": "iUnlockd IMEI services",
+      "type": "text/html",
+      "description": "Public catalog of IMEI, serial, network, MDM, FRP, and related device services.",
+      "url": "https://iunlockd.com/imei-services"
+    },
+    {
+      "identifier": "urn:air:iunlockd.com:web:server-services",
+      "displayName": "iUnlockd server services",
+      "type": "text/html",
+      "description": "Public catalog of server software access, licenses, renewals, and related products.",
+      "url": "https://iunlockd.com/server-services"
+    },
+    {
+      "identifier": "urn:air:iunlockd.com:web:tool-access",
+      "displayName": "iUnlockd technician tools",
+      "type": "text/html",
+      "description": "Public catalog of tool activations, credits, subscriptions, and rentals.",
+      "url": "https://iunlockd.com/tool-activation-credits"
+    },
+    {
+      "identifier": "urn:air:iunlockd.com:web:device-checks",
+      "displayName": "iUnlockd device checks",
+      "type": "text/html",
+      "description": "Public device-check routes for common brands and status checks.",
+      "url": "https://iunlockd.com/imei-checker"
+    },
+    {
+      "identifier": "urn:air:iunlockd.com:documentation:llms",
+      "displayName": "iUnlockd LLM guidance",
+      "type": "text/markdown",
+      "description": "Machine-readable overview of public iUnlockd resources and route conventions.",
+      "url": "https://iunlockd.com/llms.txt"
+    }
+  ]
+}

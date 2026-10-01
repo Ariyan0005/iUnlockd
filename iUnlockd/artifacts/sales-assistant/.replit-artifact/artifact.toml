@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/iunlockd"
+title = "iUnlockd"
+description = "A digital unlock services storefront with SEO-friendly product pages, dynamic provider-driven order forms, customer accounts, and merchant API synchronization."
+version = "1.0.0"
+id = "artifacts/sales-assistant"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/iunlockd" ]
+localPort = 23103
+
+[services.development]
+run = "pnpm --filter @workspace/sales-assistant run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sales-assistant", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/sales-assistant/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23103"
+BASE_PATH = "/iunlockd"

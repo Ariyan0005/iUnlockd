@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Account, payment, admin, and API screens are not public landing pages.
+# The service sitemap is explicitly allowed so crawlers can discover the
+# public catalog URLs even though other API routes stay blocked.
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /add-fund
+Disallow: /deposit
+Disallow: /my-deposits
+Disallow: /orders
+Disallow: /account
+Disallow: /manual-payment
+Disallow: /statement
+Disallow: /invoices
+Disallow: /api/
+Allow: /api/services/sitemap.xml
+
+Sitemap: https://iunlockd.com/sitemap.xml

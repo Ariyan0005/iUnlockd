@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "iUnlockd",
+    "documentationUrl": "https://iunlockd.com/",
+    "logoUrl": "https://iunlockd.com/logo.jpg"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:iunlockd:website:services",
+      "displayName": "iUnlockd Device Service Catalogue",
+      "type": "text/html",
+      "url": "https://iunlockd.com/services",
+      "description": "Browse iUnlockd device unlock, IMEI, server, tool activation, credit, and tool rental services.",
+      "tags": ["device-unlock", "imei", "server-services", "tool-services"],
+      "capabilities": ["service-catalog", "service-discovery"],
+      "representativeQueries": [
+        "Which device unlock services does iUnlockd offer?",
+        "Find an IMEI or server unlock service on iUnlockd."
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-09-29T00:00:00Z"
+    },
+    {
+      "identifier": "urn:air:iunlockd:website:device-checks",
+      "displayName": "iUnlockd Device Checks",
+      "type": "text/html",
+      "url": "https://iunlockd.com/imei-checker",
+      "description": "Start device status checks for IMEI, serial, carrier, warranty, iCloud, and blacklist information.",
+      "tags": ["imei-check", "device-status", "carrier-check", "warranty-check"],
+      "capabilities": ["device-check", "imei-lookup"],
+      "representativeQueries": [
+        "Where can I check an IMEI on iUnlockd?",
+        "Does iUnlockd offer carrier or blacklist checks?"
+      ],
+      "version": "1.0.0",
+      "updatedAt": "2026-09-29T00:00:00Z"
+    }
+  ]
+}
