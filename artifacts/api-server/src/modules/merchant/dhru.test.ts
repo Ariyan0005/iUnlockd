@@ -19,6 +19,36 @@ const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
   </PRODUCTS>
 </RESPONSE>`;
 
+const legitUnlocksResponseXml = `<?xml version="1.0" encoding="UTF-8"?>
+<DHRUFUSION_COMPATIBILITY Version="8.1">
+  <SUCCESS>
+    <RESULT>
+      <MESSAGE>IMEI Service List</MESSAGE>
+      <LIST>
+        <ImeiServiceGroup1>
+          <GROUPNAME>None</GROUPNAME>
+          <GROUPTYPE>IMEI</GROUPTYPE>
+          <SERVICES>
+            <RESULT>
+              <SERVICEID>2949</SERVICEID>
+              <SERVICETYPE>IMEI</SERVICETYPE>
+              <SERVICENAME>186# LU iPad Fixer</SERVICENAME>
+              <CREDIT>2</CREDIT>
+              <TIME>1-2 Minutes</TIME>
+            </RESULT>
+          </SERVICES>
+        </ImeiServiceGroup1>
+      </LIST>
+    </RESULT>
+  </SUCCESS>
+</DHRUFUSION_COMPATIBILITY>`;
+
+const legitUnlocksProducts = parseDhruProducts(legitUnlocksResponseXml);
+assert.equal(legitUnlocksProducts.length, 1);
+assert.equal(legitUnlocksProducts[0]?.["id"], "2949");
+assert.equal(legitUnlocksProducts[0]?.["name"], "186# LU iPad Fixer");
+assert.equal(legitUnlocksProducts[0]?.["price"], 2);
+
 const products = parseDhruProducts(responseXml);
 assert.equal(products.length, 2);
 assert.equal(products[0]?.["id"], "101");

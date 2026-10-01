@@ -54,6 +54,9 @@ export async function submitMerchantOrder(params: {
   }
 
   if (!endpoint || !apiKey) return { skipped: true };
+  if (apiFormat === "legitunlock") {
+    throw new Error("LegitUnlocks service listing is configured, but order submission is disabled until its order API contract is confirmed.");
+  }
 
   const base = endpoint.replace(/\/$/, "");
   let res: Response;
@@ -165,6 +168,13 @@ export async function checkMerchantOrderStatus(params: {
   }
 
   if (!endpoint || !apiKey) return { apiOrderId: params.apiOrderId, status: "unknown", error: "No credentials" };
+  if (apiFormat === "legitunlock") {
+    return {
+      apiOrderId: params.apiOrderId,
+      status: "unknown",
+      error: "LegitUnlocks order-status checks are disabled until its order API contract is confirmed",
+    };
+  }
 
   const base = endpoint.replace(/\/$/, "");
   let res: Response;

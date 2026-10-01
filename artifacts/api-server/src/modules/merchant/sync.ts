@@ -315,14 +315,21 @@ export async function fetchMerchantServiceList(
   apiUser: string | null,
   apiFormat: string,
 ): Promise<MerchantService[]> {
-  if (apiFormat === "dhru") {
+  if (apiFormat === "legitunlock") {
     const result = await requestDhruProducts(base, apiKey, apiUser);
     return normalizeMerchantServiceList(result.products);
   }
 
   let res: Response;
 
-  if (apiFormat === "form") {
+  if (apiFormat === "dhru") {
+    res = await fetch(`${base}/api/reseller/v1/products`, {
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Accept": "application/json",
+      },
+    });
+  } else if (apiFormat === "form") {
     const params = new URLSearchParams({ key: apiKey, action: "services" });
     if (apiUser && apiUser.trim()) params.set("username", apiUser.trim());
     res = await fetch(base, {

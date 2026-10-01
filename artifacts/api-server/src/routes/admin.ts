@@ -499,12 +499,16 @@ router.post("/merchants", authenticate, requireAdmin, async (req: AuthRequest, r
       res.status(400).json({ error: "name, apiEndpoint, and apiKey are required" });
       return;
     }
+    if (apiFormat === "legitunlock" && !apiUser?.trim()) {
+      res.status(400).json({ error: "Username is required for the LegitUnlocks API format" });
+      return;
+    }
     const [merchant] = await db.insert(merchants).values({
       name,
       apiEndpoint: apiEndpoint.trim().replace(/\/$/, ""),
       apiKey: apiKey.trim(),
       apiUser: apiUser?.trim() || null,
-      apiFormat: ["form", "dhru"].includes(apiFormat ?? "") ? (apiFormat ?? "rest") : "rest",
+      apiFormat: ["form", "dhru", "legitunlock"].includes(apiFormat ?? "") ? (apiFormat ?? "rest") : "rest",
       description: description || null,
       isActive: true,
     }).returning();
@@ -529,7 +533,13 @@ router.patch("/merchants/:id", authenticate, requireAdmin, async (req: AuthReque
     if (apiEndpoint !== undefined) update["apiEndpoint"] = apiEndpoint.trim().replace(/\/$/, "");
     if (apiKey !== undefined) update["apiKey"] = apiKey.trim();
     if (apiUser !== undefined) update["apiUser"] = apiUser.trim() || null;
-    if (apiFormat !== undefined) update["apiFormat"] = ["form", "dhru"].includes(apiFormat) ? apiFormat : "rest";
+    if (apiFormat !== undefined) {
+      if (apiFormat === "legitunlock" && !apiUser?.trim()) {
+        res.status(400).json({ error: "Username is required for the LegitUnlocks API format" });
+        return;
+      }
+      update["apiFormat"] = ["form", "dhru", "legitunlock"].includes(apiFormat) ? apiFormat : "rest";
+    }
     if (description !== undefined) update["description"] = description || null;
     if (isActive !== undefined) update["isActive"] = isActive;
 
@@ -563,19 +573,31 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
     let serviceCount = 0;
     let ok = false;
     let errorMsg = "";
-    let testedEndpoint = apiFormat === "form" ? base : apiFormat === "dhru" ? `${base}/api/reseller/v1/products` : `${base}/services`;
+    let testedEndpoint = apiFormat === "form"
+      ? base
+      : apiFormat === "dhru" || apiFormat === "legitunlock"
+        ? `${base}/api/reseller/v1/products`
+        : `${base}/services`;
 
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10000);
       let testRes: Response | undefined;
       try {
-        if (apiFormat === "dhru") {
+        if (apiFormat === "legitunlock") {
           testedEndpoint = `${base}/api/reseller/v1/products`;
           const result = await requestDhruProducts(base, merchant.apiKey, merchant.apiUser, ctrl.signal);
           httpStatus = result.httpStatus;
           serviceCount = normalizeMerchantServiceList(result.products).length;
           ok = true;
+        } else if (apiFormat === "dhru") {
+          testRes = await fetch(testedEndpoint, {
+            headers: {
+              "Authorization": `Bearer ${merchant.apiKey}`,
+              "Accept": "application/json",
+            },
+            signal: ctrl.signal,
+          });
         } else if (apiFormat === "form") {
           const params = new URLSearchParams({ key: merchant.apiKey, action: "services" });
           if (merchant.apiUser?.trim()) params.set("username", merchant.apiUser.trim());
@@ -586,9 +608,7 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
             signal: ctrl.signal,
           });
         } else {
-          const headers = apiFormat === "dhru"
-            ? { "Authorization": `Bearer ${merchant.apiKey}`, "Accept": "application/json" }
-            : buildMerchantHeaders(merchant.apiKey, merchant.apiUser);
+          const headers = buildMerchantHeaders(merchant.apiKey, merchant.apiUser);
           testRes = await fetch(`${base}/services`, { headers, signal: ctrl.signal });
         }
       } finally {
@@ -629,9 +649,13 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
       }
     }
 
-    const authMode = apiFormat === "dhru" ? `Dhru Fusion (POST action=product, user: ${merchant.apiUser})` : apiFormat === "form"
-      ? "Form/SMM Panel (POST + key in body)"
-      : merchant.apiUser ? `Basic Auth (user: ${merchant.apiUser})` : "Bearer Token";
+    const authMode = apiFormat === "legitunlock"
+      ? "LegitUnlocks Dhru XML (POST form: key + username, action=product)"
+      : apiFormat === "dhru"
+        ? "GSM Africa REST (GET + Bearer token)"
+        : apiFormat === "form"
+          ? "Form/SMM Panel (POST + key in body)"
+          : merchant.apiUser ? `Basic Auth (user: ${merchant.apiUser})` : "Bearer Token";
     req.log.info({ merchantId: id, ok, httpStatus, serviceCount, apiFormat }, "Merchant connection test");
 
     res.json({

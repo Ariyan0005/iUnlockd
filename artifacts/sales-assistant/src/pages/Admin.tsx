@@ -444,7 +444,17 @@ export default function Admin() {
 
   const openEditMerchant = (m: Merchant) => {
     setEditingMerchant(m);
-    setMerchantForm({ name: m.name, apiEndpoint: m.apiEndpoint, apiKey: "", apiUser: m.apiUser ?? "", apiFormat: m.apiFormat ?? "rest", description: m.description ?? "" });
+    const isLegacyLegitUnlocks =
+      m.apiFormat === "dhru" &&
+      /(?:^|\/\/)(?:www\.)?legitunlocks\.com(?::\d+)?(?:\/|$)/i.test(m.apiEndpoint);
+    setMerchantForm({
+      name: m.name,
+      apiEndpoint: m.apiEndpoint,
+      apiKey: "",
+      apiUser: m.apiUser ?? "",
+      apiFormat: isLegacyLegitUnlocks ? "legitunlock" : m.apiFormat ?? "rest",
+      description: m.description ?? "",
+    });
     setShowMerchantModal(true);
   };
 
@@ -454,6 +464,9 @@ export default function Admin() {
     }
     if (!editingMerchant && !merchantForm.apiKey) {
       flash("error", "API Key is required"); return;
+    }
+    if (merchantForm.apiFormat === "legitunlock" && !merchantForm.apiUser.trim()) {
+      flash("error", "Username is required for LegitUnlocks"); return;
     }
     setSavingMerchant(true);
     try {
@@ -1191,20 +1204,23 @@ export default function Admin() {
                   <SelectContent>
                     <SelectItem value="rest">REST API (GET /services + Auth header)</SelectItem>
                     <SelectItem value="form">Form/SMM Panel (POST + key in body)</SelectItem>
-                    <SelectItem value="dhru">Dhru Fusion Legacy (GSM Africa, etc)</SelectItem>
+                    <SelectItem value="dhru">GSM Africa REST (GET + Bearer token)</SelectItem>
+                    <SelectItem value="legitunlock">LegitUnlocks Dhru XML (username + API key)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-gray-500">
                   {merchantForm.apiFormat === "form"
-                    ? "LegitUnlocks, DoctorSIM, SMM panels — sends: key=xxx&action=services"
-                    : merchantForm.apiFormat === "dhru"
-                    ? "GSM Africa, Dhru Fusion legacy — sends: key=xxx&action=product&username=yyy"
-                    : "Modern REST APIs — sends Authorization header"}
+                    ? "SMM panels — POST key and action=services to the configured endpoint"
+                    : merchantForm.apiFormat === "legitunlock"
+                      ? "POSTs key, username, and action=product to /api/reseller/v1/products; product listing is supported."
+                      : merchantForm.apiFormat === "dhru"
+                        ? "GSM Africa — GET /api/reseller/v1/products with a Bearer token."
+                        : "Modern REST APIs — GET /services with an Authorization header."}
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label>API User / Partner ID (optional)</Label>
-                <Input placeholder="Optional username or partner ID" value={merchantForm.apiUser} onChange={(e) => setMerchantForm(f => ({ ...f, apiUser: e.target.value }))} />
+                <Label>{merchantForm.apiFormat === "legitunlock" ? "Username *" : "API User / Partner ID (optional)"}</Label>
+                <Input placeholder={merchantForm.apiFormat === "legitunlock" ? "LegitUnlocks username" : "Optional username or partner ID"} value={merchantForm.apiUser} onChange={(e) => setMerchantForm(f => ({ ...f, apiUser: e.target.value }))} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label>Note (optional)</Label>
