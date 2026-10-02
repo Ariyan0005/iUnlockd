@@ -88,28 +88,16 @@ sync_source() {
   git fetch "$DEPLOY_REMOTE" "$DEPLOY_BRANCH"
 
   local remote_ref="${DEPLOY_REMOTE}/${DEPLOY_BRANCH}"
-  local current_ref
-  current_ref="$(git rev-parse HEAD)"
-
   if ! git cat-file -e "${remote_ref}:deploy.sh" 2>/dev/null; then
     die "Remote branch does not contain deploy.sh; refusing to remove the deployment script."
   fi
 
-  if [ -n "$(git status --porcelain)" ]; then
-    local local_backup_ref="backup/vps-working-tree-before-deploy-$(date '+%Y%m%d-%H%M%S')-$$"
-    log "Local changes found; preserving current commit as ${local_backup_ref}"
-    git branch "$local_backup_ref" HEAD
-    warn "Tracked local changes will be replaced by ${remote_ref}"
-    git reset --hard
-    git clean -fd \
-      -e .env \
-      -e '.env.*' \
-      -e 'uploads/' \
-      -e 'storage/' \
-      -e 'backup.sql'
-    [ -z "$(git status --porcelain)" ] ||
-      die "Working tree is still dirty after safe cleanup; refusing to deploy."
+  if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    die "Tracked local changes found; refusing to reset or overwrite them."
   fi
+
+  local current_ref
+  current_ref="$(git rev-parse HEAD)"
 
   if [ "$current_ref" = "$(git rev-parse "$remote_ref")" ]; then
     log "Source is already at ${remote_ref}"
@@ -122,11 +110,7 @@ sync_source() {
     return
   fi
 
-  local backup_ref="backup/vps-before-deploy-$(date '+%Y%m%d-%H%M%S')"
-  log "Local history diverged; preserving current HEAD as ${backup_ref}"
-  git branch "$backup_ref" HEAD
-  log "Synchronizing checkout to ${remote_ref}"
-  git reset --hard "$remote_ref"
+  die "Current checkout has diverged from ${remote_ref}; refusing to reset or clean local files."
 }
 
 install_dependencies() {
