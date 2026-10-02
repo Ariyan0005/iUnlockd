@@ -183,11 +183,11 @@ export async function requestDhruProducts(
   apiUser: string | null,
   signal?: AbortSignal,
 ): Promise<DhruProductsResult> {
-  const endpoint = `${base.replace(/\/+$/, "")}/api/reseller/v1/products`;
+  const endpoint = `${base.replace(/\/+$/, "")}/api/index.php`;
   const body = new URLSearchParams({
     apiaccesskey: apiKey,
     username: apiUser ?? "",
-    action: "product",
+    action: "imeiservicelist",
   });
 
   const response = await fetch(endpoint, {

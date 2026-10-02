@@ -575,7 +575,9 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
     let errorMsg = "";
     let testedEndpoint = apiFormat === "form"
       ? base
-      : apiFormat === "dhru" || apiFormat === "legitunlock"
+      : apiFormat === "legitunlock"
+        ? `${base}/api/index.php`
+        : apiFormat === "dhru"
         ? `${base}/api/reseller/v1/products`
         : `${base}/services`;
 
@@ -585,7 +587,7 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
       let testRes: Response | undefined;
       try {
         if (apiFormat === "legitunlock") {
-          testedEndpoint = `${base}/api/reseller/v1/products`;
+          testedEndpoint = `${base}/api/index.php`;
           const result = await requestDhruProducts(base, merchant.apiKey, merchant.apiUser, ctrl.signal);
           httpStatus = result.httpStatus;
           serviceCount = normalizeMerchantServiceList(result.products).length;
@@ -650,7 +652,7 @@ router.post("/merchants/:id/test", authenticate, requireAdmin, async (req: AuthR
     }
 
     const authMode = apiFormat === "legitunlock"
-      ? "LegitUnlocks Dhru XML (POST form: apiaccesskey + username, action=product)"
+      ? "LegitUnlocks Dhru XML (POST form: apiaccesskey + username, action=imeiservicelist)"
       : apiFormat === "dhru"
         ? "GSM Africa REST (GET + Bearer token)"
         : apiFormat === "form"

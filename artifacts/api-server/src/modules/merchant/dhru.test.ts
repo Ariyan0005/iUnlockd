@@ -52,12 +52,22 @@ const legitUnlocksErrorXml = `<?xml version="1.0" encoding="UTF-8"?>
   </ERROR>
 </DHRUFUSION_COMPATIBILITY>`;
 
+const legitUnlocksInvalidCommandXml = `<?xml version="1.0" encoding="UTF-8"?>
+<DHRUFUSION_COMPATIBILITY Version="8.1">
+  <ERROR>
+    <RESULT>
+      <MESSAGE>Invalid command</MESSAGE>
+    </RESULT>
+  </ERROR>
+</DHRUFUSION_COMPATIBILITY>`;
+
 const legitUnlocksProducts = parseDhruProducts(legitUnlocksResponseXml);
 assert.equal(legitUnlocksProducts.length, 1);
 assert.equal(legitUnlocksProducts[0]?.["id"], "2949");
 assert.equal(legitUnlocksProducts[0]?.["name"], "186# LU iPad Fixer");
 assert.equal(legitUnlocksProducts[0]?.["price"], 2);
 assert.throws(() => parseDhruProducts(legitUnlocksErrorXml), /API access key field is required/);
+assert.throws(() => parseDhruProducts(legitUnlocksInvalidCommandXml), /Invalid command/);
 
 const products = parseDhruProducts(responseXml);
 assert.equal(products.length, 2);
@@ -93,14 +103,14 @@ async function verifyDhruRequest() {
       "merchant user",
     );
 
-    assert.equal(requestUrl, "https://merchant.example/api/reseller/v1/products");
+    assert.equal(requestUrl, "https://merchant.example/api/index.php");
     assert.equal(requestInit?.method, "POST");
     const headers = new Headers(requestInit?.headers);
     assert.equal(headers.get("content-type"), "application/x-www-form-urlencoded");
     assert.equal(headers.get("authorization"), null);
     assert.deepEqual(
       Object.fromEntries(new URLSearchParams(String(requestInit?.body))),
-      { apiaccesskey: "key with & symbol", username: "merchant user", action: "product" },
+      { apiaccesskey: "key with & symbol", username: "merchant user", action: "imeiservicelist" },
     );
     assert.equal(result.products.length, 2);
     assert.equal(result.httpStatus, 200);
